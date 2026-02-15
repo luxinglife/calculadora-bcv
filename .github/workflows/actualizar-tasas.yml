@@ -1,4 +1,4 @@
-name: Actualizar tasas BCV, Euro y USDT cada hora
+name: Actualizar tasas BCV, Euro y USDT (Binance) cada hora
 
 on:
   schedule:
@@ -14,6 +14,7 @@ jobs:
       - name: Clonar repositorio
         uses: actions/checkout@v4
 
+      # --- TASA BCV (dólar oficial) ---
       - name: Obtener tasa BCV
         id: get_bcv
         run: |
@@ -26,6 +27,7 @@ jobs:
           fi
           echo "rate=$RATE" >> $GITHUB_OUTPUT
 
+      # --- TASA EURO oficial ---
       - name: Obtener tasa Euro
         id: get_euro
         run: |
@@ -38,41 +40,53 @@ jobs:
           fi
           echo "rate=$RATE" >> $GITHUB_OUTPUT
 
-      - name: Obtener tasa USDT
+      # --- TASA USDT desde Binance P2P ---
+      - name: Obtener tasa USDT (Binance P2P)
         id: get_usdt
         run: |
-          RESPONSE=$(curl -s https://ve.dolarapi.com/v1/criptos/usdt)
-          echo "USDT response: $RESPONSE"
-          COMPRA=$(echo "$RESPONSE" | jq -r '.compra // empty')
-          VENTA=$(echo "$RESPONSE" | jq -r '.venta // empty')
-          PROMEDIO=$(echo "$RESPONSE" | jq -r '.promedio // empty')
-          TIMESTAMP=$(echo "$RESPONSE" | jq -r '.fechaActualizacion // empty')
+          # Función para consultar Binance P2P
+          fetch_binance_price() {
+            local TRADE_TYPE=$1
+            local RESPONSE=$(curl -s -X POST https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search \
+              -H "Content-Type: application/json" \
+              -d '{
+                "asset": "USDT",
+                "fiat": "VES",
+                "tradeType": "'"$TRADE_TYPE"'",
+                "page": 1,
+                "rows": 1,
+                "payTypes": [],
+                "publisherType": null
+              }')
+            # Extraer el precio del primer anuncio
+            echo "$RESPONSE" | jq -r '.data[0].adv.price'
+          }
+
+          # Obtener precio de compra (tradeType=BUY: compradores, es el precio que recibe el vendedor)
+          COMPRA=$(fetch_binance_price "BUY")
           if [ -z "$COMPRA" ] || [ "$COMPRA" = "null" ]; then
-            COMPRA=$PROMEDIO
-          fi
-          if [ -z "$VENTA" ] || [ "$VENTA" = "null" ]; then
-            VENTA=$PROMEDIO
-          fi
-          if [ -z "$COMPRA" ] || [ -z "$VENTA" ]; then
-            echo "Error: No se pudo obtener tasa USDT"
+            echo "Error: No se pudo obtener precio de compra USDT desde Binance"
             exit 1
           fi
+
+          # Obtener precio de venta (tradeType=SELL: vendedores, es el precio que paga el comprador)
+          VENTA=$(fetch_binance_price "SELL")
+          if [ -z "$VENTA" ] || [ "$VENTA" = "null" ]; then
+            echo "Error: No se pudo obtener precio de venta USDT desde Binance"
+            exit 1
+          fi
+
           echo "compra=$COMPRA" >> $GITHUB_OUTPUT
           echo "venta=$VENTA" >> $GITHUB_OUTPUT
-          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
 
+      # --- ACTUALIZAR rates.json ---
       - name: Actualizar rates.json
         run: |
           BCV_RATE='${{ steps.get_bcv.outputs.rate }}'
           EURO_RATE='${{ steps.get_euro.outputs.rate }}'
           USDT_COMPRA='${{ steps.get_usdt.outputs.compra }}'
           USDT_VENTA='${{ steps.get_usdt.outputs.venta }}'
-          USDT_TS='${{ steps.get_usdt.outputs.timestamp }}'
           CURRENT_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          if [ -z "$USDT_TS" ] || [ "$USDT_TS" = "null" ]; then
-            USDT_TS=$CURRENT_TIMESTAMP
-          fi
 
           if [ -f rates.json ]; then
             jq --argjson bcv "$BCV_RATE" \
@@ -80,8 +94,7 @@ jobs:
                --argjson usdt_compra "$USDT_COMPRA" \
                --argjson usdt_venta "$USDT_VENTA" \
                --arg ts "$CURRENT_TIMESTAMP" \
-               --arg usdt_ts "$USDT_TS" \
-               '.oficial = $bcv | .euro = $euro | .timestamp_oficial = $ts | .timestamp_euro = $ts | .usdt_compra = $usdt_compra | .usdt_venta = $usdt_venta | .timestamp_usdt = $usdt_ts' \
+               '.oficial = $bcv | .euro = $euro | .timestamp_oficial = $ts | .timestamp_euro = $ts | .usdt_compra = $usdt_compra | .usdt_venta = $usdt_venta | .timestamp_usdt = $ts' \
                rates.json > tmp.json && mv tmp.json rates.json
           else
             echo "{
@@ -91,16 +104,17 @@ jobs:
               \"usdt_venta\": $USDT_VENTA,
               \"timestamp_oficial\": \"$CURRENT_TIMESTAMP\",
               \"timestamp_euro\": \"$CURRENT_TIMESTAMP\",
-              \"timestamp_usdt\": \"$USDT_TS\"
+              \"timestamp_usdt\": \"$CURRENT_TIMESTAMP\"
             }" > rates.json
           fi
           cat rates.json
 
+      # --- SUBIR CAMBIOS A GITHUB ---
       - name: Commit y push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add rates.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 actualizar tasas BCV, Euro y USDT"
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 actualizar tasas BCV, Euro y USDT (Binance)"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git push
