@@ -2,15 +2,14 @@ name: Actualizar tasas BCV/USDT
 
 on:
   schedule:
-    # Se ejecuta cada hora (puedes cambiarlo)
     - cron: '0 * * * *'
-  workflow_dispatch:  # Permite ejecutarlo manualmente
+  workflow_dispatch:
 
 jobs:
   actualizar:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Necesario para hacer commit
+      contents: write
 
     steps:
       - name: Clonar repositorio
@@ -45,7 +44,7 @@ if paralelo_data:
 else:
     tasa_usdt = None
 
-# Si algo falla, usar valores por defecto (pero no fallamos el workflow)
+# Si algo falla, usar valores por defecto
 if tasa_bcv is None:
     print('⚠️ Usando valor por defecto para BCV: 36.00')
     tasa_bcv = 36.0
@@ -65,7 +64,7 @@ with open('tasas.json', 'w') as f:
     json.dump(resultado, f, indent=2)
           "
 
-      - name: Mostrar tasas generadas (para depuración)
+      - name: Mostrar tasas generadas
         run: cat tasas.json
 
       - name: Hacer commit del archivo actualizado
