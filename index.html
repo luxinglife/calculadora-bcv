@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Bs • BCV • Euro</title>
+    <title>Calculadora Bs • BCV • Euro • USDT</title>
     <style>
         * {
             margin: 0;
@@ -28,7 +28,7 @@
 
         .glass-panel {
             width: 100%;
-            max-width: 550px;
+            max-width: 600px;
             padding: 2rem 1.8rem;
             border-radius: 32px;
             background: rgba(255, 255, 255, 0.1);
@@ -48,9 +48,8 @@
 
         h1 {
             font-weight: 500;
-            font-size: 2.2rem;
-            letter-spacing: -0.5px;
-            margin-bottom: 0.2rem;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
             background: linear-gradient(135deg, #fff, #e0e0ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -85,6 +84,45 @@
         }
         .theme-toggle:hover {
             background: rgba(255,255,255,0.3);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 0.5rem;
+        }
+        .tab {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            cursor: pointer;
+            font-weight: 500;
+            backdrop-filter: blur(4px);
+            border: 1px solid transparent;
+            transition: 0.2s;
+        }
+        .tab:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .tab.active {
+            background: rgba(255,255,255,0.25);
+            border-color: rgba(255,255,255,0.3);
+        }
+        body.light .tab {
+            background: rgba(0,0,0,0.05);
+        }
+        body.light .tab.active {
+            background: rgba(0,0,0,0.1);
+            border-color: rgba(0,0,0,0.2);
+        }
+
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
         }
 
         .rates-container {
@@ -182,6 +220,14 @@
             opacity: 0.6;
         }
 
+        .note {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            font-style: italic;
+            opacity: 0.7;
+            text-align: center;
+        }
+
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button {
             -webkit-appearance: none;
@@ -199,44 +245,89 @@
             <button class="theme-toggle" id="themeToggle">🌙 Oscuro / ☀️ Claro</button>
         </div>
 
-        <h1>Bs ⇄ BCV ⇄ Euro</h1>
+        <h1>Calculadora de Tasas</h1>
 
-        <!-- Tarjetas de tasas -->
-        <div class="rates-container">
-            <div class="rate-card">
-                <div class="label">BCV (Oficial)</div>
-                <div class="value" id="rateBcv">--</div>
+        <!-- Pestañas -->
+        <div class="tabs">
+            <div class="tab active" data-tab="bcv-euro">BCV / Euro</div>
+            <div class="tab" data-tab="usdt">USDT P2P</div>
+        </div>
+
+        <!-- Contenido BCV/Euro -->
+        <div id="tab-bcv-euro" class="tab-content active">
+            <div class="rates-container">
+                <div class="rate-card">
+                    <div class="label">BCV (Oficial)</div>
+                    <div class="value" id="rateBcv">--</div>
+                </div>
+                <div class="rate-card">
+                    <div class="label">Euro</div>
+                    <div class="value" id="rateEuro">--</div>
+                </div>
             </div>
-            <div class="rate-card">
-                <div class="label">Euro</div>
-                <div class="value" id="rateEuro">--</div>
+
+            <div class="converter">
+                <div class="input-group">
+                    <label>🇻🇪 Bolívares (Bs)</label>
+                    <div class="input-field">
+                        <span>Bs</span>
+                        <input type="number" id="vesInputBcv" placeholder="0.00" step="0.01">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>💵 Dólares BCV (USD oficial)</label>
+                    <div class="input-field">
+                        <span>USD</span>
+                        <input type="number" id="bcvInput" placeholder="0.00" step="0.01">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>💶 Euros</label>
+                    <div class="input-field">
+                        <span>EUR</span>
+                        <input type="number" id="euroInput" placeholder="0.00" step="0.01">
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Campos de conversión -->
-        <div class="converter">
-            <div class="input-group">
-                <label>🇻🇪 Bolívares (Bs)</label>
-                <div class="input-field">
-                    <span>Bs</span>
-                    <input type="number" id="vesInput" placeholder="0.00" step="0.01">
+        <!-- Contenido USDT -->
+        <div id="tab-usdt" class="tab-content">
+            <div class="rates-container">
+                <div class="rate-card">
+                    <div class="label">USDT Compra</div>
+                    <div class="value" id="rateUsdtCompra">--</div>
+                </div>
+                <div class="rate-card">
+                    <div class="label">USDT Venta</div>
+                    <div class="value" id="rateUsdtVenta">--</div>
                 </div>
             </div>
-
-            <div class="input-group">
-                <label>💵 Dólares BCV (USD oficial)</label>
-                <div class="input-field">
-                    <span>USD</span>
-                    <input type="number" id="bcvInput" placeholder="0.00" step="0.01">
-                </div>
+            <div class="note">
+                Tasas promedio del mercado. Para referencia en Binance P2P, la primera orden de venta suele ser la más alta.
             </div>
 
-            <div class="input-group">
-                <label>💶 Euros</label>
-                <div class="input-field">
-                    <span>EUR</span>
-                    <input type="number" id="euroInput" placeholder="0.00" step="0.01">
+            <div class="converter">
+                <div class="input-group">
+                    <label>🇻🇪 Bolívares (Bs)</label>
+                    <div class="input-field">
+                        <span>Bs</span>
+                        <input type="number" id="vesInputUsdt" placeholder="0.00" step="0.01">
+                    </div>
                 </div>
+
+                <div class="input-group">
+                    <label>₿ USDT (Tether)</label>
+                    <div class="input-field">
+                        <span>USDT</span>
+                        <input type="number" id="usdtInput" placeholder="0.00" step="0.01">
+                    </div>
+                </div>
+            </div>
+            <div class="note">
+                * Usando tasa de venta para convertir: al vender USDT obtienes Bs multiplicando USDT por tasa de venta.
             </div>
         </div>
 
@@ -248,23 +339,49 @@
     <script>
         (function() {
             // Variables de estado
-            let rateBcv = null;   // Bs por USD oficial
-            let rateEuro = null;  // Bs por EUR
+            let rateBcv = null;
+            let rateEuro = null;
+            let usdtCompra = null;
+            let usdtVenta = null;
             let lastUpdated = null;
 
             // Elementos DOM
-            const vesInput = document.getElementById('vesInput');
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            // Elementos BCV/Euro
+            const vesInputBcv = document.getElementById('vesInputBcv');
             const bcvInput = document.getElementById('bcvInput');
             const euroInput = document.getElementById('euroInput');
             const rateBcvEl = document.getElementById('rateBcv');
             const rateEuroEl = document.getElementById('rateEuro');
+
+            // Elementos USDT
+            const vesInputUsdt = document.getElementById('vesInputUsdt');
+            const usdtInput = document.getElementById('usdtInput');
+            const rateUsdtCompraEl = document.getElementById('rateUsdtCompra');
+            const rateUsdtVentaEl = document.getElementById('rateUsdtVenta');
+
             const lastUpdateEl = document.getElementById('lastUpdate');
             const themeToggle = document.getElementById('themeToggle');
+
+            // ----- Cambio de pestañas -----
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const target = tab.dataset.tab;
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(`tab-${target}`).classList.add('active');
+                });
+            });
 
             // ----- Cargar tasas desde rates.json -----
             async function fetchRates() {
                 try {
-                    const response = await fetch('rates.json?t=' + Date.now()); // evitar caché
+                    const response = await fetch('rates.json?t=' + Date.now());
                     if (!response.ok) throw new Error('No se pudo obtener rates.json');
                     const data = await response.json();
                     
@@ -274,17 +391,31 @@
                     if (data.euro && typeof data.euro === 'number') {
                         rateEuro = data.euro;
                     }
-                    // Tomar el timestamp más reciente de los dos
-                    const tsOficial = data.timestamp_oficial ? new Date(data.timestamp_oficial) : null;
-                    const tsEuro = data.timestamp_euro ? new Date(data.timestamp_euro) : null;
-                    lastUpdated = (tsOficial && tsEuro) ? (tsOficial > tsEuro ? tsOficial : tsEuro) : (tsOficial || tsEuro);
+                    if (data.usdt_compra && typeof data.usdt_compra === 'number') {
+                        usdtCompra = data.usdt_compra;
+                    }
+                    if (data.usdt_venta && typeof data.usdt_venta === 'number') {
+                        usdtVenta = data.usdt_venta;
+                    }
+                    // Tomar el timestamp más reciente de todos
+                    const timestamps = [
+                        data.timestamp_oficial ? new Date(data.timestamp_oficial) : null,
+                        data.timestamp_euro ? new Date(data.timestamp_euro) : null,
+                        data.timestamp_usdt ? new Date(data.timestamp_usdt) : null
+                    ].filter(ts => ts !== null);
+                    if (timestamps.length > 0) {
+                        lastUpdated = new Date(Math.max(...timestamps));
+                    } else {
+                        lastUpdated = null;
+                    }
 
                     updateRateDisplay();
                 } catch (error) {
-                    console.warn('Error cargando tasas, usando valores de respaldo (36.5 / 40.0)');
-                    // Valores de respaldo para pruebas locales
+                    console.warn('Error cargando tasas, usando valores de respaldo');
                     rateBcv = 36.5;
                     rateEuro = 40.0;
+                    usdtCompra = 520;
+                    usdtVenta = 530;
                     lastUpdated = null;
                     updateRateDisplay();
                 }
@@ -292,6 +423,7 @@
 
             // Actualizar las tarjetas de tasas
             function updateRateDisplay() {
+                // BCV
                 if (rateBcv !== null) {
                     rateBcvEl.innerText = rateBcv.toFixed(2) + ' Bs/USD';
                 } else {
@@ -304,6 +436,18 @@
                     rateEuroEl.innerText = '--';
                 }
 
+                // USDT
+                if (usdtCompra !== null) {
+                    rateUsdtCompraEl.innerText = usdtCompra.toFixed(2) + ' Bs/USDT';
+                } else {
+                    rateUsdtCompraEl.innerText = '--';
+                }
+                if (usdtVenta !== null) {
+                    rateUsdtVentaEl.innerText = usdtVenta.toFixed(2) + ' Bs/USDT';
+                } else {
+                    rateUsdtVentaEl.innerText = '--';
+                }
+
                 if (lastUpdated) {
                     const formatted = lastUpdated.toLocaleString('es-VE', { timeZone: 'America/Caracas' });
                     lastUpdateEl.innerText = `🕒 última actualización: ${formatted}`;
@@ -311,19 +455,27 @@
                     lastUpdateEl.innerText = '🕒 actualización en espera...';
                 }
 
-                // Recalcular según el campo activo
-                if (rateBcv !== null && rateEuro !== null) {
-                    if (document.activeElement === vesInput) updateFromVes();
-                    else if (document.activeElement === bcvInput) updateFromBcv();
-                    else if (document.activeElement === euroInput) updateFromEuro();
-                    else updateFromVes();
+                // Recalcular según la pestaña activa
+                if (document.querySelector('.tab.active').dataset.tab === 'bcv-euro') {
+                    if (rateBcv !== null && rateEuro !== null) {
+                        if (document.activeElement === vesInputBcv) updateFromVesBcv();
+                        else if (document.activeElement === bcvInput) updateFromBcv();
+                        else if (document.activeElement === euroInput) updateFromEuro();
+                        else updateFromVesBcv();
+                    }
+                } else {
+                    if (usdtVenta !== null) {
+                        if (document.activeElement === vesInputUsdt) updateFromVesUsdt();
+                        else if (document.activeElement === usdtInput) updateFromUsdt();
+                        else updateFromVesUsdt();
+                    }
                 }
             }
 
-            // ----- Funciones de conversión -----
-            function updateFromVes() {
+            // ----- Funciones de conversión BCV/Euro -----
+            function updateFromVesBcv() {
                 if (rateBcv === null || rateEuro === null) return;
-                const ves = parseFloat(vesInput.value);
+                const ves = parseFloat(vesInputBcv.value);
                 if (isNaN(ves)) {
                     bcvInput.value = '';
                     euroInput.value = '';
@@ -337,12 +489,12 @@
                 if (rateBcv === null || rateEuro === null) return;
                 const bcv = parseFloat(bcvInput.value);
                 if (isNaN(bcv)) {
-                    vesInput.value = '';
+                    vesInputBcv.value = '';
                     euroInput.value = '';
                     return;
                 }
                 const ves = bcv * rateBcv;
-                vesInput.value = ves.toFixed(2);
+                vesInputBcv.value = ves.toFixed(2);
                 euroInput.value = (ves / rateEuro).toFixed(4);
             }
 
@@ -350,19 +502,45 @@
                 if (rateBcv === null || rateEuro === null) return;
                 const euro = parseFloat(euroInput.value);
                 if (isNaN(euro)) {
-                    vesInput.value = '';
+                    vesInputBcv.value = '';
                     bcvInput.value = '';
                     return;
                 }
                 const ves = euro * rateEuro;
-                vesInput.value = ves.toFixed(2);
+                vesInputBcv.value = ves.toFixed(2);
                 bcvInput.value = (ves / rateBcv).toFixed(4);
             }
 
+            // ----- Funciones de conversión USDT (usando tasa de venta) -----
+            function updateFromVesUsdt() {
+                if (usdtVenta === null) return;
+                const ves = parseFloat(vesInputUsdt.value);
+                if (isNaN(ves)) {
+                    usdtInput.value = '';
+                    return;
+                }
+                // Para comprar USDT con Bs, se usa la tasa de venta
+                usdtInput.value = (ves / usdtVenta).toFixed(4);
+            }
+
+            function updateFromUsdt() {
+                if (usdtVenta === null) return;
+                const usdt = parseFloat(usdtInput.value);
+                if (isNaN(usdt)) {
+                    vesInputUsdt.value = '';
+                    return;
+                }
+                // Al vender USDT, obtienes Bs multiplicando por tasa de venta
+                vesInputUsdt.value = (usdt * usdtVenta).toFixed(2);
+            }
+
             // Asignar eventos
-            vesInput.addEventListener('input', updateFromVes);
+            vesInputBcv.addEventListener('input', updateFromVesBcv);
             bcvInput.addEventListener('input', updateFromBcv);
             euroInput.addEventListener('input', updateFromEuro);
+
+            vesInputUsdt.addEventListener('input', updateFromVesUsdt);
+            usdtInput.addEventListener('input', updateFromUsdt);
 
             // ----- Tema claro/oscuro -----
             function toggleTheme() {
@@ -373,7 +551,6 @@
 
             themeToggle.addEventListener('click', toggleTheme);
 
-            // Preferencia inicial del sistema
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
                 document.body.classList.add('light');
                 themeToggle.innerText = '🌙 Oscuro';
@@ -383,8 +560,6 @@
 
             // Iniciar carga de tasas
             fetchRates();
-
-            // Recargar tasas cada 5 minutos (sin recargar página)
             setInterval(fetchRates, 5 * 60 * 1000);
         })();
     </script>
