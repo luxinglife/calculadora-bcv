@@ -1,0 +1,65 @@
+name: Actualizar tasa USDT/BS cada hora
+
+on:
+  schedule:
+    # Cada hora en punto (minuto 0) — UTC
+    - cron: '0 * * * *'
+  workflow_dispatch:      # Permite ejecución manual
+
+jobs:
+  update-rate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # Para hacer commit del archivo rates.json
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Obtener tasa desde dolarapi.com (Venezuela)
+        id: get_rate
+        run: |
+          # Llamar a la API oficial de Venezuela
+          RESPONSE=$(curl -s https://ve.dolarapi.com/v1/dolares/oficial)
+          echo "API Response: $RESPONSE"
+          
+          # Extraer tasa de venta (usamos "venta" como referencia)
+          RATE=$(echo "$RESPONSE" | jq -r '.venta')
+          TIMESTAMP=$(echo "$RESPONSE" | jq -r '.fechaActualizacion')
+          
+          # Si no se pudo obtener, salir sin actualizar
+          if [ "$RATE" = "null" ] || [ -z "$RATE" ]; then
+            echo "Error: No se pudo obtener la tasa"
+            exit 1
+          fi
+          
+          # Guardar en variables para el paso siguiente
+          echo "rate=$RATE" >> $GITHUB_OUTPUT
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+
+      - name: Crear / actualizar rates.json
+        run: |
+          RATE='${{ steps.get_rate.outputs.rate }}'
+          TIMESTAMP='${{ steps.get_rate.outputs.timestamp }}'
+          # Si la API no devuelve timestamp, usamos la hora actual UTC
+          if [ "$TIMESTAMP" = "null" ] || [ -z "$TIMESTAMP" ]; then
+            TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          fi
+          
+          cat > rates.json <<EOF
+          {
+            "rate": $RATE,
+            "timestamp": "$TIMESTAMP",
+            "source": "ve.dolarapi.com/oficial"
+          }
+          EOF
+          
+          echo "Archivo rates.json generado:"
+          cat rates.json
+
+      - name: Hacer commit y push si hay cambios
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add rates.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 actualización automática de tasa USDT/BS"
+          git push
