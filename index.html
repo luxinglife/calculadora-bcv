@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculadora Bs • BCV • Euro</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2b2d42">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         * {
             margin: 0;
@@ -49,7 +53,6 @@
         h1 {
             font-weight: 500;
             font-size: 2.2rem;
-            letter-spacing: -0.5px;
             margin-bottom: 0.2rem;
             background: linear-gradient(135deg, #fff, #e0e0ff);
             -webkit-background-clip: text;
@@ -70,6 +73,8 @@
             margin-bottom: 1.5rem;
             font-size: 0.95rem;
             opacity: 0.8;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
 
         .theme-toggle {
@@ -84,6 +89,24 @@
             transition: 0.2s;
         }
         .theme-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .refresh-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 40px;
+            padding: 0.3rem 1rem;
+            cursor: pointer;
+            font-weight: 500;
+            backdrop-filter: blur(4px);
+            color: inherit;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .refresh-btn:hover {
             background: rgba(255,255,255,0.3);
         }
 
@@ -180,6 +203,10 @@
             font-size: 0.8rem;
             text-align: center;
             opacity: 0.6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         input[type=number]::-webkit-inner-spin-button,
@@ -190,13 +217,22 @@
         input[type=number] {
             -moz-appearance: textfield;
         }
+
+        .install-guide {
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+            opacity: 0.5;
+        }
     </style>
 </head>
 <body>
     <div class="glass-panel">
         <div class="sub">
             <span>🇻🇪 Caracas, Venezuela</span>
-            <button class="theme-toggle" id="themeToggle">🌙 Oscuro / ☀️ Claro</button>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="refresh-btn" id="refreshBtn">↻ Actualizar</button>
+                <button class="theme-toggle" id="themeToggle">🌙 Oscuro / ☀️ Claro</button>
+            </div>
         </div>
 
         <h1>Bs ⇄ BCV ⇄ Euro</h1>
@@ -243,13 +279,16 @@
         <div class="footer" id="lastUpdate">
             ⏳ Cargando tasas...
         </div>
+        <div class="install-guide" id="installInfo">
+            Para instalar como app, abre en Chrome y selecciona "Añadir a pantalla de inicio"
+        </div>
     </div>
 
     <script>
         (function() {
             // Variables de estado
-            let rateBcv = null;   // Bs por USD oficial
-            let rateEuro = null;  // Bs por EUR
+            let rateBcv = null;
+            let rateEuro = null;
             let lastUpdated = null;
 
             // Elementos DOM
@@ -260,9 +299,13 @@
             const rateEuroEl = document.getElementById('rateEuro');
             const lastUpdateEl = document.getElementById('lastUpdate');
             const themeToggle = document.getElementById('themeToggle');
+            const refreshBtn = document.getElementById('refreshBtn');
 
             // ----- Cargar tasas desde rates.json -----
-            async function fetchRates() {
+            async function fetchRates(showLoading = true) {
+                if (showLoading) {
+                    lastUpdateEl.innerText = '⏳ Actualizando...';
+                }
                 try {
                     const response = await fetch('rates.json?t=' + Date.now()); // evitar caché
                     if (!response.ok) throw new Error('No se pudo obtener rates.json');
@@ -282,7 +325,6 @@
                     updateRateDisplay();
                 } catch (error) {
                     console.warn('Error cargando tasas, usando valores de respaldo (36.5 / 40.0)');
-                    // Valores de respaldo para pruebas locales
                     rateBcv = 36.5;
                     rateEuro = 40.0;
                     lastUpdated = null;
@@ -364,6 +406,11 @@
             bcvInput.addEventListener('input', updateFromBcv);
             euroInput.addEventListener('input', updateFromEuro);
 
+            // Botón de actualización manual
+            refreshBtn.addEventListener('click', () => {
+                fetchRates(true);
+            });
+
             // ----- Tema claro/oscuro -----
             function toggleTheme() {
                 document.body.classList.toggle('light');
@@ -373,7 +420,6 @@
 
             themeToggle.addEventListener('click', toggleTheme);
 
-            // Preferencia inicial del sistema
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
                 document.body.classList.add('light');
                 themeToggle.innerText = '🌙 Oscuro';
@@ -383,9 +429,18 @@
 
             // Iniciar carga de tasas
             fetchRates();
+            setInterval(() => fetchRates(false), 5 * 60 * 1000); // cada 5 minutos sin mostrar "actualizando"
 
-            // Recargar tasas cada 5 minutos (sin recargar página)
-            setInterval(fetchRates, 5 * 60 * 1000);
+            // ----- Registrar Service Worker para PWA -----
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('sw.js').then(reg => {
+                        console.log('Service Worker registrado:', reg);
+                    }).catch(err => {
+                        console.log('Error al registrar Service Worker:', err);
+                    });
+                });
+            }
         })();
     </script>
 </body>
