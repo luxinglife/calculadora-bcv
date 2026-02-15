@@ -42,12 +42,11 @@ jobs:
         run: |
           BCV_RATE='${{ steps.get_bcv.outputs.rate }}'
           EURO_RATE='${{ steps.get_euro.outputs.rate }}'
+          # Generar timestamp actual en UTC (se convertirá a Caracas en el frontend)
           CURRENT_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
           if [ -f rates.json ]; then
-            jq --argjson bcv "$BCV_RATE" \
-               --argjson euro "$EURO_RATE" \
-               --arg ts "$CURRENT_TIMESTAMP" \
+            jq --argjson bcv "$BCV_RATE" --argjson euro "$EURO_RATE" --arg ts "$CURRENT_TIMESTAMP" \
                '.oficial = $bcv | .euro = $euro | .timestamp_oficial = $ts | .timestamp_euro = $ts' \
                rates.json > tmp.json && mv tmp.json rates.json
           else
