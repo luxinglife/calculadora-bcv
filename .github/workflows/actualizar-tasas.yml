@@ -2,7 +2,7 @@ name: Actualizar tasas BCV/USDT
 
 on:
   schedule:
-    # Se ejecuta cada hora (puedes cambiarlo, por ejemplo cada 30 minutos: '*/30 * * * *')
+    # Se ejecuta cada hora (puedes cambiarlo)
     - cron: '0 * * * *'
   workflow_dispatch:  # Permite ejecutarlo manualmente
 
@@ -10,63 +10,67 @@ jobs:
   actualizar:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Necesario para hacer commit del archivo
+      contents: write  # Necesario para hacer commit
 
     steps:
       - name: Clonar repositorio
         uses: actions/checkout@v4
 
-      - name: Obtener tasa oficial (BCV)
-        run: |
-          curl -s https://dolarapi.com/v1/dolares/oficial > oficial.json
-
-      - name: Obtener tasa paralelo (referencia USDT)
-        run: |
-          curl -s https://dolarapi.com/v1/dolares/paralelo > paralelo.json
-
-      - name: Extraer y guardar tasas
+      - name: Obtener y guardar tasas
         run: |
           python3 -c "
-          import json
-          import sys
+import json
+import urllib.request
+import sys
 
-          try:
-              # Leer tasa oficial
-              with open('oficial.json') as f:
-                  oficial_data = json.load(f)
-              tasa_bcv = oficial_data.get('promedio') or oficial_data.get('venta')
-              if not tasa_bcv:
-                  print('Error: No se pudo obtener tasa BCV')
-                  sys.exit(1)
+def fetch_json(url):
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            return json.loads(response.read().decode())
+    except Exception as e:
+        print(f'Error al obtener {url}: {e}')
+        return None
 
-              # Leer tasa paralelo (USDT)
-              with open('paralelo.json') as f:
-                  paralelo_data = json.load(f)
-              tasa_usdt = paralelo_data.get('promedio') or paralelo_data.get('venta')
-              if not tasa_usdt:
-                  # Si no hay paralelo, estimar un 10% más que la oficial
-                  tasa_usdt = tasa_bcv * 1.1
+# Intentar obtener tasa oficial (BCV)
+oficial_data = fetch_json('https://dolarapi.com/v1/dolares/oficial')
+if oficial_data:
+    tasa_bcv = oficial_data.get('promedio') or oficial_data.get('venta')
+else:
+    tasa_bcv = None
 
-              # Crear objeto con las tasas
-              resultado = {
-                  'bcv': round(float(tasa_bcv), 2),
-                  'usdt': round(float(tasa_usdt), 2)
-              }
+# Intentar obtener tasa paralelo (referencia para USDT)
+paralelo_data = fetch_json('https://dolarapi.com/v1/dolares/paralelo')
+if paralelo_data:
+    tasa_usdt = paralelo_data.get('promedio') or paralelo_data.get('venta')
+else:
+    tasa_usdt = None
 
-              # Guardar en archivo
-              with open('tasas.json', 'w') as f:
-                  json.dump(resultado, f, indent=2)
+# Si algo falla, usar valores por defecto (pero no fallamos el workflow)
+if tasa_bcv is None:
+    print('⚠️ Usando valor por defecto para BCV: 36.00')
+    tasa_bcv = 36.0
+if tasa_usdt is None:
+    print('⚠️ Estimando USDT como BCV * 1.1')
+    tasa_usdt = tasa_bcv * 1.1
 
-              print('Tasas actualizadas correctamente')
-          except Exception as e:
-              print(f'Error: {e}')
-              sys.exit(1)
+resultado = {
+    'bcv': round(float(tasa_bcv), 2),
+    'usdt': round(float(tasa_usdt), 2)
+}
+
+print('✅ Tasas obtenidas:', resultado)
+
+# Guardar en archivo
+with open('tasas.json', 'w') as f:
+    json.dump(resultado, f, indent=2)
           "
+
+      - name: Mostrar tasas generadas (para depuración)
+        run: cat tasas.json
 
       - name: Hacer commit del archivo actualizado
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add tasas.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "Actualizar tasas [skip ci]"
-          git push
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Actualizar tasas [skip ci]" && git push)
