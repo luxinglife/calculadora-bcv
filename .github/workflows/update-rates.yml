@@ -1,59 +1,75 @@
-name: Actualizar tasa USDT/BS cada hora
+name: Actualizar tasas BCV y USDT cada hora
 
 on:
   schedule:
-    # Cada hora en punto (minuto 0) — UTC
+    # Cada hora en punto (UTC)
     - cron: '0 * * * *'
-  workflow_dispatch:      # Permite ejecución manual
+  workflow_dispatch:   # Permite ejecución manual
 
 jobs:
-  update-rate:
+  update-rates:
     runs-on: ubuntu-latest
     permissions:
-      contents: write      # Para hacer commit del archivo rates.json
+      contents: write   # Para hacer commit del archivo rates.json
     steps:
       - name: Clonar repositorio
         uses: actions/checkout@v4
 
-      - name: Obtener tasa desde dolarapi.com (Venezuela)
-        id: get_rate
+      - name: Obtener tasas desde dolarapi.com
+        id: get_rates
         run: |
-          # Llamar a la API oficial de Venezuela
-          RESPONSE=$(curl -s https://ve.dolarapi.com/v1/dolares/oficial)
-          echo "API Response: $RESPONSE"
-          
-          # Extraer tasa de venta (usamos "venta" como referencia)
-          RATE=$(echo "$RESPONSE" | jq -r '.venta')
-          TIMESTAMP=$(echo "$RESPONSE" | jq -r '.fechaActualizacion')
-          
-          # Si no se pudo obtener, salir sin actualizar
-          if [ "$RATE" = "null" ] || [ -z "$RATE" ]; then
-            echo "Error: No se pudo obtener la tasa"
+          # Consultar BCV (oficial)
+          OFICIAL_RESPONSE=$(curl -s https://ve.dolarapi.com/v1/dolares/oficial)
+          echo "Oficial response: $OFICIAL_RESPONSE"
+          OFICIAL_RATE=$(echo "$OFICIAL_RESPONSE" | jq -r '.venta')
+          OFICIAL_TIMESTAMP=$(echo "$OFICIAL_RESPONSE" | jq -r '.fechaActualizacion')
+          if [ "$OFICIAL_RATE" = "null" ] || [ -z "$OFICIAL_RATE" ]; then
+            echo "Error: No se pudo obtener tasa oficial"
             exit 1
           fi
-          
-          # Guardar en variables para el paso siguiente
-          echo "rate=$RATE" >> $GITHUB_OUTPUT
-          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
 
-      - name: Crear / actualizar rates.json
-        run: |
-          RATE='${{ steps.get_rate.outputs.rate }}'
-          TIMESTAMP='${{ steps.get_rate.outputs.timestamp }}'
-          # Si la API no devuelve timestamp, usamos la hora actual UTC
-          if [ "$TIMESTAMP" = "null" ] || [ -z "$TIMESTAMP" ]; then
-            TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          # Consultar USDT (criptomoneda)
+          USDT_RESPONSE=$(curl -s https://ve.dolarapi.com/v1/criptos/usdt)
+          echo "USDT response: $USDT_RESPONSE"
+          USDT_RATE=$(echo "$USDT_RESPONSE" | jq -r '.venta')
+          USDT_TIMESTAMP=$(echo "$USDT_RESPONSE" | jq -r '.fechaActualizacion')
+          if [ "$USDT_RATE" = "null" ] || [ -z "$USDT_RATE" ]; then
+            echo "Error: No se pudo obtener tasa USDT"
+            exit 1
           fi
-          
+
+          # Guardar outputs para el siguiente paso
+          echo "oficial_rate=$OFICIAL_RATE" >> $GITHUB_OUTPUT
+          echo "oficial_timestamp=$OFICIAL_TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "usdt_rate=$USDT_RATE" >> $GITHUB_OUTPUT
+          echo "usdt_timestamp=$USDT_TIMESTAMP" >> $GITHUB_OUTPUT
+
+      - name: Crear rates.json
+        run: |
+          OFICIAL_RATE='${{ steps.get_rates.outputs.oficial_rate }}'
+          OFICIAL_TS='${{ steps.get_rates.outputs.oficial_timestamp }}'
+          USDT_RATE='${{ steps.get_rates.outputs.usdt_rate }}'
+          USDT_TS='${{ steps.get_rates.outputs.usdt_timestamp }}'
+
+          # Si la API no devuelve timestamp, usar hora actual UTC
+          if [ "$OFICIAL_TS" = "null" ] || [ -z "$OFICIAL_TS" ]; then
+            OFICIAL_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          fi
+          if [ "$USDT_TS" = "null" ] || [ -z "$USDT_TS" ]; then
+            USDT_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          fi
+
           cat > rates.json <<EOF
           {
-            "rate": $RATE,
-            "timestamp": "$TIMESTAMP",
-            "source": "ve.dolarapi.com/oficial"
+            "oficial": $OFICIAL_RATE,
+            "timestamp_oficial": "$OFICIAL_TS",
+            "usdt": $USDT_RATE,
+            "timestamp_usdt": "$USDT_TS",
+            "source": "ve.dolarapi.com"
           }
           EOF
-          
-          echo "Archivo rates.json generado:"
+
+          echo "rates.json generado:"
           cat rates.json
 
       - name: Hacer commit y push si hay cambios
@@ -61,5 +77,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add rates.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 actualización automática de tasa USDT/BS"
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 actualización automática de tasas BCV y USDT"
           git push
