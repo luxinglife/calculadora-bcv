@@ -20,13 +20,11 @@ jobs:
           RESPONSE=$(curl -s https://ve.dolarapi.com/v1/dolares/oficial)
           echo "BCV response: $RESPONSE"
           RATE=$(echo "$RESPONSE" | jq -r '(.venta // .promedio) // empty')
-          TIMESTAMP=$(echo "$RESPONSE" | jq -r '.fechaActualizacion // empty')
           if [ -z "$RATE" ]; then
             echo "Error: No se pudo obtener tasa BCV"
             exit 1
           fi
           echo "rate=$RATE" >> $GITHUB_OUTPUT
-          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
 
       - name: Obtener tasa Euro
         id: get_euro
@@ -34,39 +32,29 @@ jobs:
           RESPONSE=$(curl -s https://ve.dolarapi.com/v1/euros/oficial)
           echo "Euro response: $RESPONSE"
           RATE=$(echo "$RESPONSE" | jq -r '(.venta // .promedio) // empty')
-          TIMESTAMP=$(echo "$RESPONSE" | jq -r '.fechaActualizacion // empty')
           if [ -z "$RATE" ]; then
             echo "Error: No se pudo obtener tasa Euro"
             exit 1
           fi
           echo "rate=$RATE" >> $GITHUB_OUTPUT
-          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
 
       - name: Actualizar rates.json
         run: |
           BCV_RATE='${{ steps.get_bcv.outputs.rate }}'
-          BCV_TS='${{ steps.get_bcv.outputs.timestamp }}'
           EURO_RATE='${{ steps.get_euro.outputs.rate }}'
-          EURO_TS='${{ steps.get_euro.outputs.timestamp }}'
-
-          if [ -z "$BCV_TS" ] || [ "$BCV_TS" = "null" ]; then
-            BCV_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          fi
-          if [ -z "$EURO_TS" ] || [ "$EURO_TS" = "null" ]; then
-            EURO_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          fi
+          # Generar timestamp actual en UTC (se convertirá a Caracas en el frontend)
+          CURRENT_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
           if [ -f rates.json ]; then
-            jq --argjson bcv "$BCV_RATE" --arg bcv_ts "$BCV_TS" \
-               --argjson euro "$EURO_RATE" --arg euro_ts "$EURO_TS" \
-               '.oficial = $bcv | .timestamp_oficial = $bcv_ts | .euro = $euro | .timestamp_euro = $euro_ts' \
+            jq --argjson bcv "$BCV_RATE" --argjson euro "$EURO_RATE" --arg ts "$CURRENT_TIMESTAMP" \
+               '.oficial = $bcv | .euro = $euro | .timestamp_oficial = $ts | .timestamp_euro = $ts' \
                rates.json > tmp.json && mv tmp.json rates.json
           else
             echo "{
               \"oficial\": $BCV_RATE,
-              \"timestamp_oficial\": \"$BCV_TS\",
               \"euro\": $EURO_RATE,
-              \"timestamp_euro\": \"$EURO_TS\"
+              \"timestamp_oficial\": \"$CURRENT_TIMESTAMP\",
+              \"timestamp_euro\": \"$CURRENT_TIMESTAMP\"
             }" > rates.json
           fi
           cat rates.json
