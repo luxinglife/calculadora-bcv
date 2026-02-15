@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculadora Bs • BCV • Euro • USDT</title>
     <style>
+        /* (mismos estilos que antes, solo agregamos el botón de actualizar) */
         * {
             margin: 0;
             padding: 0;
@@ -69,6 +70,8 @@
             margin-bottom: 1.5rem;
             font-size: 0.95rem;
             opacity: 0.8;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
 
         .theme-toggle {
@@ -83,6 +86,24 @@
             transition: 0.2s;
         }
         .theme-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .refresh-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 40px;
+            padding: 0.3rem 1rem;
+            cursor: pointer;
+            font-weight: 500;
+            backdrop-filter: blur(4px);
+            color: inherit;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .refresh-btn:hover {
             background: rgba(255,255,255,0.3);
         }
 
@@ -218,6 +239,10 @@
             font-size: 0.8rem;
             text-align: center;
             opacity: 0.6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .note {
@@ -252,7 +277,10 @@
     <div class="glass-panel">
         <div class="sub">
             <span>🇻🇪 Caracas, Venezuela</span>
-            <button class="theme-toggle" id="themeToggle">🌙 Oscuro / ☀️ Claro</button>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="refresh-btn" id="refreshBtn">↻ Actualizar ahora</button>
+                <button class="theme-toggle" id="themeToggle">🌙 Oscuro / ☀️ Claro</button>
+            </div>
         </div>
 
         <h1>Calculadora de Tasas</h1>
@@ -380,6 +408,7 @@
 
             const lastUpdateEl = document.getElementById('lastUpdate');
             const themeToggle = document.getElementById('themeToggle');
+            const refreshBtn = document.getElementById('refreshBtn');
 
             // ----- Cambio de pestañas -----
             tabs.forEach(tab => {
@@ -395,9 +424,12 @@
             });
 
             // ----- Cargar tasas desde rates.json -----
-            async function fetchRates() {
+            async function fetchRates(showLoading = true) {
+                if (showLoading) {
+                    lastUpdateEl.innerText = '⏳ Actualizando...';
+                }
                 try {
-                    const response = await fetch('rates.json?t=' + Date.now());
+                    const response = await fetch('rates.json?t=' + Date.now()); // evitar caché
                     if (!response.ok) throw new Error('No se pudo obtener rates.json');
                     const data = await response.json();
                     
@@ -484,10 +516,8 @@
                         if (document.activeElement === vesInputUsdt) updateFromVesUsdt();
                         else if (document.activeElement === usdtInput) updateFromUsdt();
                         else {
-                            // Si no hay foco, actualizar ambos campos y el equivalente
                             updateFromVesUsdt();
                         }
-                        // Actualizar equivalente en USD BCV
                         updateUsdtBcvEquivalent();
                     }
                 }
@@ -587,6 +617,11 @@
                 updateUsdtBcvEquivalent();
             });
 
+            // Botón de actualización manual
+            refreshBtn.addEventListener('click', () => {
+                fetchRates(true);
+            });
+
             // ----- Tema claro/oscuro -----
             function toggleTheme() {
                 document.body.classList.toggle('light');
@@ -605,7 +640,7 @@
 
             // Iniciar carga de tasas
             fetchRates();
-            setInterval(fetchRates, 5 * 60 * 1000);
+            setInterval(() => fetchRates(false), 5 * 60 * 1000); // cada 5 minutos sin mostrar "actualizando"
         })();
     </script>
 </body>
