@@ -228,6 +228,16 @@
             text-align: center;
         }
 
+        .extra-info {
+            margin-top: 1rem;
+            font-size: 1rem;
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 0.8rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button {
             -webkit-appearance: none;
@@ -306,7 +316,7 @@
                 </div>
             </div>
             <div class="note">
-                Tasas promedio del mercado. Para referencia en Binance P2P, la primera orden de venta suele ser la más alta.
+                Tasas del mercado P2P (Binance). La primera orden de venta suele ser la más alta.
             </div>
 
             <div class="converter">
@@ -325,6 +335,11 @@
                         <input type="number" id="usdtInput" placeholder="0.00" step="0.01">
                     </div>
                 </div>
+            </div>
+
+            <!-- Equivalente en dólares BCV -->
+            <div class="extra-info" id="usdtBcvEquivalent">
+                Equivalente en USD BCV: -- USD
             </div>
             <div class="note">
                 * Usando tasa de venta para convertir: al vender USDT obtienes Bs multiplicando USDT por tasa de venta.
@@ -361,6 +376,7 @@
             const usdtInput = document.getElementById('usdtInput');
             const rateUsdtCompraEl = document.getElementById('rateUsdtCompra');
             const rateUsdtVentaEl = document.getElementById('rateUsdtVenta');
+            const usdtBcvEquivalent = document.getElementById('usdtBcvEquivalent');
 
             const lastUpdateEl = document.getElementById('lastUpdate');
             const themeToggle = document.getElementById('themeToggle');
@@ -421,7 +437,7 @@
                 }
             }
 
-            // Actualizar las tarjetas de tasas
+            // Actualizar las tarjetas de tasas y equivalentes
             function updateRateDisplay() {
                 // BCV
                 if (rateBcv !== null) {
@@ -464,10 +480,15 @@
                         else updateFromVesBcv();
                     }
                 } else {
-                    if (usdtVenta !== null) {
+                    if (usdtVenta !== null && rateBcv !== null) {
                         if (document.activeElement === vesInputUsdt) updateFromVesUsdt();
                         else if (document.activeElement === usdtInput) updateFromUsdt();
-                        else updateFromVesUsdt();
+                        else {
+                            // Si no hay foco, actualizar ambos campos y el equivalente
+                            updateFromVesUsdt();
+                        }
+                        // Actualizar equivalente en USD BCV
+                        updateUsdtBcvEquivalent();
                     }
                 }
             }
@@ -517,10 +538,10 @@
                 const ves = parseFloat(vesInputUsdt.value);
                 if (isNaN(ves)) {
                     usdtInput.value = '';
-                    return;
+                } else {
+                    usdtInput.value = (ves / usdtVenta).toFixed(4);
                 }
-                // Para comprar USDT con Bs, se usa la tasa de venta
-                usdtInput.value = (ves / usdtVenta).toFixed(4);
+                updateUsdtBcvEquivalent();
             }
 
             function updateFromUsdt() {
@@ -528,10 +549,28 @@
                 const usdt = parseFloat(usdtInput.value);
                 if (isNaN(usdt)) {
                     vesInputUsdt.value = '';
-                    return;
+                } else {
+                    vesInputUsdt.value = (usdt * usdtVenta).toFixed(2);
                 }
-                // Al vender USDT, obtienes Bs multiplicando por tasa de venta
-                vesInputUsdt.value = (usdt * usdtVenta).toFixed(2);
+                updateUsdtBcvEquivalent();
+            }
+
+            function updateUsdtBcvEquivalent() {
+                if (rateBcv === null || usdtVenta === null) return;
+                const usdt = parseFloat(usdtInput.value);
+                if (!isNaN(usdt) && usdt > 0) {
+                    const bs = usdt * usdtVenta;
+                    const usdBCV = bs / rateBcv;
+                    usdtBcvEquivalent.innerText = `Equivalente en USD BCV: ${usdBCV.toFixed(2)} USD`;
+                } else {
+                    const ves = parseFloat(vesInputUsdt.value);
+                    if (!isNaN(ves) && ves > 0) {
+                        const usdBCV = ves / rateBcv;
+                        usdtBcvEquivalent.innerText = `Equivalente en USD BCV: ${usdBCV.toFixed(2)} USD`;
+                    } else {
+                        usdtBcvEquivalent.innerText = `Equivalente en USD BCV: -- USD`;
+                    }
+                }
             }
 
             // Asignar eventos
@@ -539,8 +578,14 @@
             bcvInput.addEventListener('input', updateFromBcv);
             euroInput.addEventListener('input', updateFromEuro);
 
-            vesInputUsdt.addEventListener('input', updateFromVesUsdt);
-            usdtInput.addEventListener('input', updateFromUsdt);
+            vesInputUsdt.addEventListener('input', () => {
+                updateFromVesUsdt();
+                updateUsdtBcvEquivalent();
+            });
+            usdtInput.addEventListener('input', () => {
+                updateFromUsdt();
+                updateUsdtBcvEquivalent();
+            });
 
             // ----- Tema claro/oscuro -----
             function toggleTheme() {
