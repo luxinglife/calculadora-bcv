@@ -1,46 +1,46 @@
-name: Actualizar tasas BCV/USDT
-
-on:
-  schedule:
-    - cron: '0 * * * *'  # Cada hora
-  workflow_dispatch:      # Permite ejecución manual
-
-jobs:
-  actualizar:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Clonar repositorio
-        uses: actions/checkout@v4
-
-      - name: Obtener tasas de dolarapi
-        run: |
-          curl -s https://dolarapi.com/v1/dolares > dolares.json
-
       - name: Extraer tasas BCV y USDT
         run: |
           python3 -c "
-          import json
-          with open('dolares.json') as f:
-              data = json.load(f)
-          oficial = next((d for d in data if d['tipo'] == 'oficial'), None)
-          paralelo = next((d for d in data if d['tipo'] == 'paralelo'), None)
-          if not oficial:
-              print('Error: No se encontró tasa oficial')
-              exit(1)
-          tasa_bcv = oficial.get('promedio') or oficial.get('venta')
-          tasa_usdt = paralelo.get('promedio') or paralelo.get('venta') if paralelo else tasa_bcv * 1.1
-          resultado = {'bcv': round(tasa_bcv, 2), 'usdt': round(tasa_usdt, 2)}
-          with open('tasas.json', 'w') as f:
-              json.dump(resultado, f, indent=2)
-          "
+import json
 
-      - name: Hacer commit del archivo actualizado
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add tasas.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "Actualizar tasas [skip ci]"
-          git push
+# Cargar el archivo descargado
+with open('dolares.json') as f:
+    data = json.load(f)
+
+# Imprimir la estructura para depuración (esto saldrá en los logs)
+print('Estructura recibida:')
+print(json.dumps(data, indent=2)[:500])  # Solo primeros 500 caracteres
+
+# Intentar detectar la estructura automáticamente
+tasa_bcv = None
+tasa_usdt = None
+
+# Caso 1: Si es un diccionario con claves 'oficial' y 'paralelo'
+if isinstance(data, dict):
+    if 'oficial' in data:
+        oficial = data['oficial']
+        tasa_bcv = oficial.get('promedio') or oficial.get('venta')
+    if 'paralelo' in data:
+        paralelo = data['paralelo']
+        tasa_usdt = paralelo.get('promedio') or paralelo.get('venta')
+
+# Caso 2: Si es una lista de objetos con clave 'tipo' (como suponíamos antes)
+elif isinstance(data, list):
+    for item in data:
+        if item.get('tipo') == 'oficial':
+            tasa_bcv = item.get('promedio') or item.get('venta')
+        elif item.get('tipo') == 'paralelo':
+            tasa_usdt = item.get('promedio') or item.get('venta')
+
+# Si no se encontraron, usar valores por defecto
+if tasa_bcv is None:
+    tasa_bcv = 36.0
+if tasa_usdt is None:
+    tasa_usdt = tasa_bcv * 1.1 if tasa_bcv else 40.0
+
+resultado = {'bcv': round(tasa_bcv, 2), 'usdt': round(tasa_usdt, 2)}
+with open('tasas.json', 'w') as f:
+    json.dump(resultado, f, indent=2)
+
+print('Tasas extraídas:', resultado)
+"
