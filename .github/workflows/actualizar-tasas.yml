@@ -15,6 +15,7 @@ jobs:
       - name: Clonar repositorio
         uses: actions/checkout@v4
 
+      # --- TASA BCV (DÓLAR OFICIAL) ---
       - name: Obtener tasa BCV
         id: get_bcv
         run: |
@@ -29,10 +30,11 @@ jobs:
           echo "rate=$RATE" >> $GITHUB_OUTPUT
           echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
 
+      # --- TASA EURO OFICIAL ---
       - name: Obtener tasa Euro
         id: get_euro
         run: |
-          RESPONSE=$(curl -s https://ve.dolarapi.com/v1/euros)
+          RESPONSE=$(curl -s https://ve.dolarapi.com/v1/euros/oficial)
           echo "Euro response: $RESPONSE"
           RATE=$(echo "$RESPONSE" | jq -r '(.venta // .promedio) // empty')
           TIMESTAMP=$(echo "$RESPONSE" | jq -r '.fechaActualizacion // empty')
@@ -43,6 +45,7 @@ jobs:
           echo "rate=$RATE" >> $GITHUB_OUTPUT
           echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
 
+      # --- ACTUALIZAR rates.json (fusionar o crear) ---
       - name: Actualizar rates.json
         run: |
           BCV_RATE='${{ steps.get_bcv.outputs.rate }}'
@@ -50,6 +53,7 @@ jobs:
           EURO_RATE='${{ steps.get_euro.outputs.rate }}'
           EURO_TS='${{ steps.get_euro.outputs.timestamp }}'
 
+          # Si no hay timestamp, usar hora actual UTC
           if [ -z "$BCV_TS" ] || [ "$BCV_TS" = "null" ]; then
             BCV_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           fi
@@ -59,11 +63,13 @@ jobs:
 
           # Si el archivo rates.json ya existe, fusionamos; si no, lo creamos
           if [ -f rates.json ]; then
+            # Usamos jq para actualizar solo las claves BCV y Euro
             jq --argjson bcv "$BCV_RATE" --arg bcv_ts "$BCV_TS" \
                --argjson euro "$EURO_RATE" --arg euro_ts "$EURO_TS" \
                '.oficial = $bcv | .timestamp_oficial = $bcv_ts | .euro = $euro | .timestamp_euro = $euro_ts' \
                rates.json > tmp.json && mv tmp.json rates.json
           else
+            # Crear archivo nuevo
             echo "{
               \"oficial\": $BCV_RATE,
               \"timestamp_oficial\": \"$BCV_TS\",
@@ -71,8 +77,10 @@ jobs:
               \"timestamp_euro\": \"$EURO_TS\"
             }" > rates.json
           fi
+          echo "rates.json actualizado:"
           cat rates.json
 
+      # --- SUBIR CAMBIOS A GITHUB ---
       - name: Commit y push
         run: |
           git config user.name "github-actions[bot]"
