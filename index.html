@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora BCV vs USDT</title>
+    <style>
+        /* ===== ESTILOS GENERALES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a0f1e, #1a1f2f);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        /* ===== CONTENEDOR PRINCIPAL (EFECTO GLASS) ===== */
+        .glass-container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(20, 25, 40, 0.6);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 40px;
+            padding: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* ===== TIPOGRAFÍA ===== */
+        h1 {
+            color: #fff;
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            color: #a0a8c0;
+            font-size: 1rem;
+            margin-bottom: 24px;
+            border-left: 4px solid #3b82f6;
+            padding-left: 16px;
+        }
+
+        /* ===== TARJETAS DE TASAS ===== */
+        .rates-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .rate-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 24px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s;
+        }
+
+        .rate-card:hover {
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+
+        .rate-label {
+            color: #8f9bb3;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .rate-value {
+            color: #fff;
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .rate-value small {
+            font-size: 1rem;
+            color: #6b7a93;
+            font-weight: 400;
+            margin-left: 5px;
+        }
+
+        /* ===== SECCIONES DE CÁLCULO ===== */
+        .calc-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 28px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-title {
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title span {
+            background: #2d3748;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            color: #a0aec0;
+        }
+
+        /* ===== INPUTS ===== */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            color: #b0b8d0;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            display: block;
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(10, 15, 30, 0.6);
+            border: 1px solid #2d3748;
+            border-radius: 20px;
+            padding: 16px 20px;
+            font-size: 1.2rem;
+            color: #fff;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        /* ===== RESULTADOS ===== */
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .result-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .result-label {
+            color: #8f9bb3;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+
+        .result-number {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .result-number small {
+            font-size: 0.9rem;
+            color: #6b7a93;
+            font-weight: 400;
+        }
+
+        /* ===== NOTA Y PIE ===== */
+        .footer-note {
+            color: #6b7a93;
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-note a {
+            color: #90a0c0;
+            text-decoration: none;
+            border-bottom: 1px dotted;
+        }
+
+        .footer-note a:hover {
+            color: #fff;
+        }
+
+        /* ===== ANIMACIONES ===== */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glass-container {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            .glass-container { padding: 20px; }
+            h1 { font-size: 1.8rem; }
+            .rates-grid { grid-template-columns: 1fr; }
+            .results-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="glass-container">
+        <h1>💰 BCV · USDT</h1>
+        <div class="subtitle">Tasas en tiempo real · Venezuela</div>
+
+        <!-- TARJETAS DE TASAS (se actualizan con JavaScript) -->
+        <div class="rates-grid" id="ratesContainer">
+            <div class="rate-card">
+                <div class="rate-label">🇻🇪 BCV (Oficial)</div>
+                <div class="rate-value" id="tasaBCV">Bs --</div>
+            </div>
+            <div class="rate-card">
+                <div class="rate-label">💱 USDT P2P (Banesco)</div>
+                <div class="rate-value" id="tasaP2P">Bs --</div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: BOLÍVARES → USDT / USD -->
+        <div class="calc-section">
+            <div class="section-title">
+                🔄 Bolívares → USDT / USD
+                <span>Bs → 💵</span>
+            </div>
+            <div class="input-group">
+                <label class="input-label">Monto en Bolívares (Bs)</label>
+                <input type="number" id="inputBs" class="input-field" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="results-grid">
+                <div class="result-item">
+                    <div class="result-label">USDT (tasa P2P)</div>
+                    <div class="result-number" id="resultBsToUsdt">0.00 <small>USDT</small></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">USD (tasa BCV)</div>
+                    <div class="result-number" id="resultBsToUsd">0.00 <small>$</small></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: USDT → BOLÍVARES -->
+        <div class="calc-section">
+            <div class="section-title">
+                🔄 USDT → Bolívares
+                <span>💵 → Bs</span>
+            </div>
+            <div class="input-group">
+                <label class="input-label">Monto en USDT</label>
+                <input type="number" id="inputUsdt" class="input-field" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="results-grid">
+                <div class="result-item">
+                    <div class="result-label">Bs (tasa P2P)</div>
+                    <div class="result-number" id="resultUsdtToBsP2P">0.00 <small>Bs</small></div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">Bs (tasa BCV)</div>
+                    <div class="result-number" id="resultUsdtToBsBCV">0.00 <small>Bs</small></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PIE DE PÁGINA -->
+        <div class="footer-note">
+            🔄 Tasas obtenidas de <a href="https://dolarapi.com" target="_blank">dolarapi.com</a> · Actualización cada 5 minutos<br>
+            La tasa P2P es aproximada. Para operaciones reales, verifica en Binance.
+        </div>
+    </div>
+
+    <script>
+        // ==================================================
+        // CALCULADORA BCV / USDT - JavaScript
+        // ==================================================
+        
+        // Variables globales para las tasas
+        let tasaBCV = 0;
+        let tasaP2P = 0;
+
+        // Elementos del DOM
+        const tasaBCVEl = document.getElementById('tasaBCV');
+        const tasaP2PEl = document.getElementById('tasaP2P');
+        
+        const inputBs = document.getElementById('inputBs');
+        const resultBsToUsdt = document.getElementById('resultBsToUsdt');
+        const resultBsToUsd = document.getElementById('resultBsToUsd');
+        
+        const inputUsdt = document.getElementById('inputUsdt');
+        const resultUsdtToBsP2P = document.getElementById('resultUsdtToBsP2P');
+        const resultUsdtToBsBCV = document.getElementById('resultUsdtToBsBCV');
+
+        // ===== FUNCIÓN PARA OBTENER TASAS =====
+        async function obtenerTasas() {
+            try {
+                // Mostrar estado de carga
+                tasaBCVEl.innerText = 'Bs ...';
+                tasaP2PEl.innerText = 'Bs ...';
+
+                // Petición a la API (con timeout)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                const response = await fetch('https://ve.dolarapi.com/v1/dolares', {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) throw new Error('Error en la respuesta');
+
+                const data = await response.json();
+                
+                // Buscar tasas oficial y paralelo
+                const oficial = data.find(d => d.tipo === 'oficial');
+                const paralelo = data.find(d => d.tipo === 'paralelo');
+
+                if (oficial && oficial.promedio) {
+                    tasaBCV = oficial.promedio;
+                } else if (oficial && oficial.venta) {
+                    tasaBCV = oficial.venta;
+                } else {
+                    throw new Error('No se encontró tasa oficial');
+                }
+
+                if (paralelo && paralelo.promedio) {
+                    tasaP2P = paralelo.promedio;
+                } else if (paralelo && paralelo.venta) {
+                    tasaP2P = paralelo.venta;
+                } else {
+                    // Si no hay paralelo, usamos la oficial como fallback
+                    tasaP2P = tasaBCV * 1.1; // Estimado
+                }
+
+                // Actualizar UI
+                actualizarTasasUI();
+                calcularTodos();
+
+            } catch (error) {
+                console.error('Error obteniendo tasas:', error);
+                // Valores de respaldo
+                tasaBCV = 36.0;
+                tasaP2P = 40.0;
+                actualizarTasasUI();
+                calcularTodos();
+                
+                // Mostrar error no intrusivo
+                tasaBCVEl.innerText = '⚠️ ' + tasaBCV.toFixed(2);
+                tasaP2PEl.innerText = '⚠️ ' + tasaP2P.toFixed(2);
+            }
+        }
+
+        // ===== ACTUALIZAR INTERFAZ DE TASAS =====
+        function actualizarTasasUI() {
+            tasaBCVEl.innerText = `Bs ${tasaBCV.toFixed(2)}`;
+            tasaP2PEl.innerText = `Bs ${tasaP2P.toFixed(2)}`;
+        }
+
+        // ===== FUNCIONES DE CÁLCULO =====
+        function calcularBsTo() {
+            const montoBs = parseFloat(inputBs.value) || 0;
+            
+            if (montoBs > 0 && tasaP2P > 0) {
+                const usdt = montoBs / tasaP2P;
+                resultBsToUsdt.innerText = usdt.toFixed(4) + ' USDT';
+            } else {
+                resultBsToUsdt.innerText = '0.00 USDT';
+            }
+
+            if (montoBs > 0 && tasaBCV > 0) {
+                const usd = montoBs / tasaBCV;
+                resultBsToUsd.innerText = usd.toFixed(2) + ' $';
+            } else {
+                resultBsToUsd.innerText = '0.00 $';
+            }
+        }
+
+        function calcularUsdtTo() {
+            const montoUsdt = parseFloat(inputUsdt.value) || 0;
+            
+            if (montoUsdt > 0 && tasaP2P > 0) {
+                const bsP2P = montoUsdt * tasaP2P;
+                resultUsdtToBsP2P.innerText = bsP2P.toFixed(2) + ' Bs';
+            } else {
+                resultUsdtToBsP2P.innerText = '0.00 Bs';
+            }
+
+            if (montoUsdt > 0 && tasaBCV > 0) {
+                const bsBCV = montoUsdt * tasaBCV;
+                resultUsdtToBsBCV.innerText = bsBCV.toFixed(2) + ' Bs';
+            } else {
+                resultUsdtToBsBCV.innerText = '0.00 Bs';
+            }
+        }
+
+        function calcularTodos() {
+            calcularBsTo();
+            calcularUsdtTo();
+        }
+
+        // ===== EVENT LISTENERS =====
+        inputBs.addEventListener('input', calcularBsTo);
+        inputUsdt.addEventListener('input', calcularUsdtTo);
+
+        // ===== INICIALIZACIÓN =====
+        // Obtener tasas inmediatamente
+        obtenerTasas();
+        
+        // Actualizar cada 5 minutos (300000 ms)
+        setInterval(obtenerTasas, 300000);
+    </script>
+</body>
+</html>
