@@ -40,13 +40,14 @@ jobs:
           fi
           echo "rate=$RATE" >> $GITHUB_OUTPUT
 
-      # --- TASA USDT desde Binance P2P ---
+      # --- TASA USDT desde Binance P2P (con manejo robusto) ---
       - name: Obtener tasa USDT (Binance P2P)
         id: get_usdt
         run: |
-          # Función para consultar Binance P2P
+          # Función para consultar Binance P2P y limpiar la respuesta
           fetch_binance_price() {
             local TRADE_TYPE=$1
+            # Realizar la petición y eliminar caracteres nulos y posibles basura
             local RESPONSE=$(curl -s -X POST https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search \
               -H "Content-Type: application/json" \
               -d '{
@@ -57,21 +58,27 @@ jobs:
                 "rows": 1,
                 "payTypes": [],
                 "publisherType": null
-              }')
+              }' | tr -d '\0' | sed 's/^\xEF\xBB\xBF//')  # Eliminar BOM y nulos
+            # Verificar si la respuesta es JSON válido
+            echo "$RESPONSE" | jq empty 2>/dev/null || { echo "Respuesta no JSON: $RESPONSE"; return 1; }
             # Extraer el precio del primer anuncio
-            echo "$RESPONSE" | jq -r '.data[0].adv.price'
+            local PRICE=$(echo "$RESPONSE" | jq -r '.data[0].adv.price')
+            if [ -z "$PRICE" ] || [ "$PRICE" = "null" ]; then
+              return 1
+            fi
+            echo "$PRICE"
           }
 
-          # Obtener precio de compra (tradeType=BUY: compradores, es el precio que recibe el vendedor)
+          # Obtener precio de compra (tradeType=BUY: el precio que recibe el vendedor)
           COMPRA=$(fetch_binance_price "BUY")
-          if [ -z "$COMPRA" ] || [ "$COMPRA" = "null" ]; then
+          if [ -z "$COMPRA" ]; then
             echo "Error: No se pudo obtener precio de compra USDT desde Binance"
             exit 1
           fi
 
-          # Obtener precio de venta (tradeType=SELL: vendedores, es el precio que paga el comprador)
+          # Obtener precio de venta (tradeType=SELL: el precio que paga el comprador)
           VENTA=$(fetch_binance_price "SELL")
-          if [ -z "$VENTA" ] || [ "$VENTA" = "null" ]; then
+          if [ -z "$VENTA" ]; then
             echo "Error: No se pudo obtener precio de venta USDT desde Binance"
             exit 1
           fi
