@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculadora BCV vs USDT</title>
     <style>
-        /* ===== ESTILOS GENERALES ===== */
+        /* (mismos estilos que antes, pero añadimos estilo para el botón) */
         * {
             margin: 0;
             padding: 0;
@@ -22,7 +22,6 @@
             padding: 16px;
         }
 
-        /* ===== CONTENEDOR PRINCIPAL (EFECTO GLASS) ===== */
         .glass-container {
             width: 100%;
             max-width: 800px;
@@ -35,7 +34,6 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        /* ===== TIPOGRAFÍA ===== */
         h1 {
             color: #fff;
             font-size: 2.2rem;
@@ -53,7 +51,6 @@
             padding-left: 16px;
         }
 
-        /* ===== TARJETAS DE TASAS ===== */
         .rates-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -96,7 +93,59 @@
             margin-left: 5px;
         }
 
-        /* ===== SECCIONES DE CÁLCULO ===== */
+        /* Botón de actualizar */
+        .update-button-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 16px;
+        }
+
+        .update-btn {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3b82f6;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .update-btn:hover {
+            background: rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .update-btn:active {
+            transform: translateY(0);
+        }
+
+        .update-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #6b7a93;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         .calc-section {
             background: rgba(0, 0, 0, 0.2);
             border-radius: 28px;
@@ -123,7 +172,6 @@
             color: #a0aec0;
         }
 
-        /* ===== INPUTS ===== */
         .input-group {
             margin-bottom: 20px;
         }
@@ -152,7 +200,6 @@
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
 
-        /* ===== RESULTADOS ===== */
         .results-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -185,7 +232,6 @@
             font-weight: 400;
         }
 
-        /* ===== NOTA Y PIE ===== */
         .footer-note {
             color: #6b7a93;
             font-size: 0.8rem;
@@ -205,7 +251,13 @@
             color: #fff;
         }
 
-        /* ===== ANIMACIONES ===== */
+        .last-update {
+            color: #6b7a93;
+            font-size: 0.8rem;
+            text-align: right;
+            margin-top: 8px;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -215,7 +267,6 @@
             animation: fadeIn 0.5s ease-out;
         }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 600px) {
             .glass-container { padding: 20px; }
             h1 { font-size: 1.8rem; }
@@ -229,8 +280,16 @@
         <h1>💰 BCV · USDT</h1>
         <div class="subtitle">Tasas en tiempo real · Venezuela</div>
 
-        <!-- TARJETAS DE TASAS (se actualizan con JavaScript) -->
-        <div class="rates-grid" id="ratesContainer">
+        <!-- Botón de actualizar -->
+        <div class="update-button-container">
+            <button class="update-btn" id="updateBtn">
+                <span id="btnText">Actualizar tasas</span>
+                <span id="spinner" class="spinner" style="display: none;"></span>
+            </button>
+        </div>
+
+        <!-- TARJETAS DE TASAS -->
+        <div class="rates-grid">
             <div class="rate-card">
                 <div class="rate-label">🇻🇪 BCV (Oficial)</div>
                 <div class="rate-value" id="tasaBCV">Bs --</div>
@@ -240,6 +299,9 @@
                 <div class="rate-value" id="tasaP2P">Bs --</div>
             </div>
         </div>
+
+        <!-- Última actualización -->
+        <div class="last-update" id="lastUpdate"></div>
 
         <!-- SECCIÓN: BOLÍVARES → USDT / USD -->
         <div class="calc-section">
@@ -287,53 +349,96 @@
 
         <!-- PIE DE PÁGINA -->
         <div class="footer-note">
-            🔄 Tasas obtenidas de <a href="https://dolarapi.com" target="_blank">dolarapi.com</a> · Actualización cada 5 minutos<br>
+            🔄 Tasas obtenidas de <a href="https://dolarapi.com" target="_blank">dolarapi.com</a><br>
             La tasa P2P es aproximada. Para operaciones reales, verifica en Binance.
         </div>
     </div>
 
     <script>
-        // ==================================================
-        // CALCULADORA BCV / USDT - JavaScript
-        // ==================================================
-        
-        // Variables globales para las tasas
-        let tasaBCV = 0;
-        let tasaP2P = 0;
-
         // Elementos del DOM
         const tasaBCVEl = document.getElementById('tasaBCV');
         const tasaP2PEl = document.getElementById('tasaP2P');
-        
+        const lastUpdateEl = document.getElementById('lastUpdate');
+        const updateBtn = document.getElementById('updateBtn');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('spinner');
+
         const inputBs = document.getElementById('inputBs');
         const resultBsToUsdt = document.getElementById('resultBsToUsdt');
         const resultBsToUsd = document.getElementById('resultBsToUsd');
-        
+
         const inputUsdt = document.getElementById('inputUsdt');
         const resultUsdtToBsP2P = document.getElementById('resultUsdtToBsP2P');
         const resultUsdtToBsBCV = document.getElementById('resultUsdtToBsBCV');
 
-        // ===== FUNCIÓN PARA OBTENER TASAS =====
+        let tasaBCV = 0;
+        let tasaP2P = 0;
+
+        // Función para formatear fecha/hora
+        function formatearFecha() {
+            const ahora = new Date();
+            return ahora.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        // Función para actualizar la UI con las tasas
+        function actualizarTasasUI() {
+            tasaBCVEl.innerText = `Bs ${tasaBCV.toFixed(2)}`;
+            tasaP2PEl.innerText = `Bs ${tasaP2P.toFixed(2)}`;
+            lastUpdateEl.innerText = `Última actualización: ${formatearFecha()}`;
+        }
+
+        // Función para calcular conversiones
+        function calcularBsTo() {
+            const montoBs = parseFloat(inputBs.value) || 0;
+            if (montoBs > 0 && tasaP2P > 0) {
+                const usdt = montoBs / tasaP2P;
+                resultBsToUsdt.innerHTML = usdt.toFixed(4) + ' <small>USDT</small>';
+            } else {
+                resultBsToUsdt.innerHTML = '0.00 <small>USDT</small>';
+            }
+            if (montoBs > 0 && tasaBCV > 0) {
+                const usd = montoBs / tasaBCV;
+                resultBsToUsd.innerHTML = usd.toFixed(2) + ' <small>$</small>';
+            } else {
+                resultBsToUsd.innerHTML = '0.00 <small>$</small>';
+            }
+        }
+
+        function calcularUsdtTo() {
+            const montoUsdt = parseFloat(inputUsdt.value) || 0;
+            if (montoUsdt > 0 && tasaP2P > 0) {
+                const bsP2P = montoUsdt * tasaP2P;
+                resultUsdtToBsP2P.innerHTML = bsP2P.toFixed(2) + ' <small>Bs</small>';
+            } else {
+                resultUsdtToBsP2P.innerHTML = '0.00 <small>Bs</small>';
+            }
+            if (montoUsdt > 0 && tasaBCV > 0) {
+                const bsBCV = montoUsdt * tasaBCV;
+                resultUsdtToBsBCV.innerHTML = bsBCV.toFixed(2) + ' <small>Bs</small>';
+            } else {
+                resultUsdtToBsBCV.innerHTML = '0.00 <small>Bs</small>';
+            }
+        }
+
+        function calcularTodos() {
+            calcularBsTo();
+            calcularUsdtTo();
+        }
+
+        // Función para obtener tasas de la API
         async function obtenerTasas() {
+            // Deshabilitar botón y mostrar spinner
+            updateBtn.disabled = true;
+            btnText.textContent = 'Actualizando...';
+            spinner.style.display = 'inline-block';
+
             try {
-                // Mostrar estado de carga
-                tasaBCVEl.innerText = 'Bs ...';
-                tasaP2PEl.innerText = 'Bs ...';
-
-                // Petición a la API (con timeout)
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-                const response = await fetch('https://ve.dolarapi.com/v1/dolares', {
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-
+                // Usar endpoint que devuelve todas las tasas
+                const response = await fetch('https://ve.dolarapi.com/v1/dolares');
                 if (!response.ok) throw new Error('Error en la respuesta');
-
                 const data = await response.json();
-                
-                // Buscar tasas oficial y paralelo
+
+                // Buscar oficial y paralelo
                 const oficial = data.find(d => d.tipo === 'oficial');
                 const paralelo = data.find(d => d.tipo === 'paralelo');
 
@@ -350,85 +455,40 @@
                 } else if (paralelo && paralelo.venta) {
                     tasaP2P = paralelo.venta;
                 } else {
-                    // Si no hay paralelo, usamos la oficial como fallback
-                    tasaP2P = tasaBCV * 1.1; // Estimado
+                    // Si no hay paralelo, estimamos
+                    tasaP2P = tasaBCV * 1.1;
                 }
 
-                // Actualizar UI
                 actualizarTasasUI();
                 calcularTodos();
-
             } catch (error) {
-                console.error('Error obteniendo tasas:', error);
-                // Valores de respaldo
+                console.error('Error:', error);
+                // Mostrar valores de respaldo
                 tasaBCV = 36.0;
                 tasaP2P = 40.0;
                 actualizarTasasUI();
                 calcularTodos();
-                
-                // Mostrar error no intrusivo
-                tasaBCVEl.innerText = '⚠️ ' + tasaBCV.toFixed(2);
-                tasaP2PEl.innerText = '⚠️ ' + tasaP2P.toFixed(2);
+                // Indicar error en las tasas
+                tasaBCVEl.innerText = '⚠️ Bs 36.00';
+                tasaP2PEl.innerText = '⚠️ Bs 40.00';
+            } finally {
+                // Restaurar botón
+                updateBtn.disabled = false;
+                btnText.textContent = 'Actualizar tasas';
+                spinner.style.display = 'none';
             }
         }
 
-        // ===== ACTUALIZAR INTERFAZ DE TASAS =====
-        function actualizarTasasUI() {
-            tasaBCVEl.innerText = `Bs ${tasaBCV.toFixed(2)}`;
-            tasaP2PEl.innerText = `Bs ${tasaP2P.toFixed(2)}`;
-        }
-
-        // ===== FUNCIONES DE CÁLCULO =====
-        function calcularBsTo() {
-            const montoBs = parseFloat(inputBs.value) || 0;
-            
-            if (montoBs > 0 && tasaP2P > 0) {
-                const usdt = montoBs / tasaP2P;
-                resultBsToUsdt.innerText = usdt.toFixed(4) + ' USDT';
-            } else {
-                resultBsToUsdt.innerText = '0.00 USDT';
-            }
-
-            if (montoBs > 0 && tasaBCV > 0) {
-                const usd = montoBs / tasaBCV;
-                resultBsToUsd.innerText = usd.toFixed(2) + ' $';
-            } else {
-                resultBsToUsd.innerText = '0.00 $';
-            }
-        }
-
-        function calcularUsdtTo() {
-            const montoUsdt = parseFloat(inputUsdt.value) || 0;
-            
-            if (montoUsdt > 0 && tasaP2P > 0) {
-                const bsP2P = montoUsdt * tasaP2P;
-                resultUsdtToBsP2P.innerText = bsP2P.toFixed(2) + ' Bs';
-            } else {
-                resultUsdtToBsP2P.innerText = '0.00 Bs';
-            }
-
-            if (montoUsdt > 0 && tasaBCV > 0) {
-                const bsBCV = montoUsdt * tasaBCV;
-                resultUsdtToBsBCV.innerText = bsBCV.toFixed(2) + ' Bs';
-            } else {
-                resultUsdtToBsBCV.innerText = '0.00 Bs';
-            }
-        }
-
-        function calcularTodos() {
-            calcularBsTo();
-            calcularUsdtTo();
-        }
-
-        // ===== EVENT LISTENERS =====
+        // Event listeners
         inputBs.addEventListener('input', calcularBsTo);
         inputUsdt.addEventListener('input', calcularUsdtTo);
+        updateBtn.addEventListener('click', obtenerTasas);
 
-        // ===== INICIALIZACIÓN =====
-        // Obtener tasas inmediatamente
+        // Cargar tasas al inicio
         obtenerTasas();
-        
-        // Actualizar cada 5 minutos (300000 ms)
+
+        // Actualización automática cada 5 minutos (opcional, si quieres mantenerla)
+        // Puedes comentar la siguiente línea si prefieres solo manual
         setInterval(obtenerTasas, 300000);
     </script>
 </body>
