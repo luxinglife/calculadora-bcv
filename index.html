@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Bs • BCV • USDT</title>
+    <title>Calculadora Bs • BCV • Euro</title>
     <style>
         * {
             margin: 0;
@@ -199,7 +199,7 @@
             <button class="theme-toggle" id="themeToggle">🌙 Oscuro / ☀️ Claro</button>
         </div>
 
-        <h1>Bs ⇄ BCV ⇄ USDT</h1>
+        <h1>Bs ⇄ BCV ⇄ Euro</h1>
 
         <!-- Tarjetas de tasas -->
         <div class="rates-container">
@@ -208,8 +208,8 @@
                 <div class="value" id="rateBcv">--</div>
             </div>
             <div class="rate-card">
-                <div class="label">USDT</div>
-                <div class="value" id="rateUsdt">--</div>
+                <div class="label">Euro</div>
+                <div class="value" id="rateEuro">--</div>
             </div>
         </div>
 
@@ -232,10 +232,10 @@
             </div>
 
             <div class="input-group">
-                <label>₿ USDT (Tether)</label>
+                <label>💶 Euros</label>
                 <div class="input-field">
-                    <span>USDT</span>
-                    <input type="number" id="usdtInput" placeholder="0.00" step="0.01">
+                    <span>EUR</span>
+                    <input type="number" id="euroInput" placeholder="0.00" step="0.01">
                 </div>
             </div>
         </div>
@@ -248,16 +248,16 @@
     <script>
         (function() {
             // Variables de estado
-            let rateBcv = null;      // Bs por USD oficial
-            let rateUsdt = null;     // Bs por USDT
+            let rateBcv = null;   // Bs por USD oficial
+            let rateEuro = null;  // Bs por EUR
             let lastUpdated = null;
 
             // Elementos DOM
             const vesInput = document.getElementById('vesInput');
             const bcvInput = document.getElementById('bcvInput');
-            const usdtInput = document.getElementById('usdtInput');
+            const euroInput = document.getElementById('euroInput');
             const rateBcvEl = document.getElementById('rateBcv');
-            const rateUsdtEl = document.getElementById('rateUsdt');
+            const rateEuroEl = document.getElementById('rateEuro');
             const lastUpdateEl = document.getElementById('lastUpdate');
             const themeToggle = document.getElementById('themeToggle');
 
@@ -268,24 +268,23 @@
                     if (!response.ok) throw new Error('No se pudo obtener rates.json');
                     const data = await response.json();
                     
-                    // Validar y asignar
                     if (data.oficial && typeof data.oficial === 'number') {
                         rateBcv = data.oficial;
                     }
-                    if (data.usdt && typeof data.usdt === 'number') {
-                        rateUsdt = data.usdt;
+                    if (data.euro && typeof data.euro === 'number') {
+                        rateEuro = data.euro;
                     }
                     // Tomar el timestamp más reciente de los dos
                     const tsOficial = data.timestamp_oficial ? new Date(data.timestamp_oficial) : null;
-                    const tsUsdt = data.timestamp_usdt ? new Date(data.timestamp_usdt) : null;
-                    lastUpdated = (tsOficial && tsUsdt) ? (tsOficial > tsUsdt ? tsOficial : tsUsdt) : (tsOficial || tsUsdt);
+                    const tsEuro = data.timestamp_euro ? new Date(data.timestamp_euro) : null;
+                    lastUpdated = (tsOficial && tsEuro) ? (tsOficial > tsEuro ? tsOficial : tsEuro) : (tsOficial || tsEuro);
 
                     updateRateDisplay();
                 } catch (error) {
-                    console.warn('Error cargando tasas, usando valores de respaldo (36.5 / 37.2)');
+                    console.warn('Error cargando tasas, usando valores de respaldo (36.5 / 40.0)');
                     // Valores de respaldo para pruebas locales
                     rateBcv = 36.5;
-                    rateUsdt = 37.2;
+                    rateEuro = 40.0;
                     lastUpdated = null;
                     updateRateDisplay();
                 }
@@ -299,10 +298,10 @@
                     rateBcvEl.innerText = '--';
                 }
 
-                if (rateUsdt !== null) {
-                    rateUsdtEl.innerText = rateUsdt.toFixed(2) + ' Bs/USDT';
+                if (rateEuro !== null) {
+                    rateEuroEl.innerText = rateEuro.toFixed(2) + ' Bs/EUR';
                 } else {
-                    rateUsdtEl.innerText = '--';
+                    rateEuroEl.innerText = '--';
                 }
 
                 if (lastUpdated) {
@@ -312,51 +311,50 @@
                     lastUpdateEl.innerText = '🕒 actualización en espera...';
                 }
 
-                // Si ya tenemos tasas, forzar un recálculo (por si habían valores previos)
-                if (rateBcv !== null && rateUsdt !== null) {
-                    // Determinar qué campo tiene el foco o valor para recalcular
+                // Recalcular según el campo activo
+                if (rateBcv !== null && rateEuro !== null) {
                     if (document.activeElement === vesInput) updateFromVes();
                     else if (document.activeElement === bcvInput) updateFromBcv();
-                    else if (document.activeElement === usdtInput) updateFromUsdt();
-                    else updateFromVes(); // por defecto
+                    else if (document.activeElement === euroInput) updateFromEuro();
+                    else updateFromVes();
                 }
             }
 
             // ----- Funciones de conversión -----
             function updateFromVes() {
-                if (rateBcv === null || rateUsdt === null) return;
+                if (rateBcv === null || rateEuro === null) return;
                 const ves = parseFloat(vesInput.value);
                 if (isNaN(ves)) {
                     bcvInput.value = '';
-                    usdtInput.value = '';
+                    euroInput.value = '';
                     return;
                 }
                 bcvInput.value = (ves / rateBcv).toFixed(4);
-                usdtInput.value = (ves / rateUsdt).toFixed(4);
+                euroInput.value = (ves / rateEuro).toFixed(4);
             }
 
             function updateFromBcv() {
-                if (rateBcv === null || rateUsdt === null) return;
+                if (rateBcv === null || rateEuro === null) return;
                 const bcv = parseFloat(bcvInput.value);
                 if (isNaN(bcv)) {
                     vesInput.value = '';
-                    usdtInput.value = '';
+                    euroInput.value = '';
                     return;
                 }
                 const ves = bcv * rateBcv;
                 vesInput.value = ves.toFixed(2);
-                usdtInput.value = (ves / rateUsdt).toFixed(4);
+                euroInput.value = (ves / rateEuro).toFixed(4);
             }
 
-            function updateFromUsdt() {
-                if (rateBcv === null || rateUsdt === null) return;
-                const usdt = parseFloat(usdtInput.value);
-                if (isNaN(usdt)) {
+            function updateFromEuro() {
+                if (rateBcv === null || rateEuro === null) return;
+                const euro = parseFloat(euroInput.value);
+                if (isNaN(euro)) {
                     vesInput.value = '';
                     bcvInput.value = '';
                     return;
                 }
-                const ves = usdt * rateUsdt;
+                const ves = euro * rateEuro;
                 vesInput.value = ves.toFixed(2);
                 bcvInput.value = (ves / rateBcv).toFixed(4);
             }
@@ -364,7 +362,7 @@
             // Asignar eventos
             vesInput.addEventListener('input', updateFromVes);
             bcvInput.addEventListener('input', updateFromBcv);
-            usdtInput.addEventListener('input', updateFromUsdt);
+            euroInput.addEventListener('input', updateFromEuro);
 
             // ----- Tema claro/oscuro -----
             function toggleTheme() {
