@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Bolívar ↔ USDT • Venezuela</title>
+    <title>Calculadora Bs • BCV • USDT</title>
     <style>
-        /* Variables de tema (glassmorphism) */
         * {
             margin: 0;
             padding: 0;
@@ -23,14 +22,13 @@
             background: linear-gradient(145deg, #2b2d42 0%, #1d1f2c 100%);
         }
 
-        /* tema claro (se activa con clase .light) */
         body.light {
             background: linear-gradient(145deg, #f0f2f5 0%, #d9dce3 100%);
         }
 
         .glass-panel {
             width: 100%;
-            max-width: 480px;
+            max-width: 550px;
             padding: 2rem 1.8rem;
             border-radius: 32px;
             background: rgba(255, 255, 255, 0.1);
@@ -69,7 +67,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             font-size: 0.95rem;
             opacity: 0.8;
         }
@@ -89,32 +87,49 @@
             background: rgba(255,255,255,0.3);
         }
 
-        .rate-info {
-            background: rgba(0,0,0,0.2);
-            border-radius: 30px;
-            padding: 0.5rem 1rem;
+        .rates-container {
+            display: flex;
+            gap: 1rem;
             margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .rate-card {
+            flex: 1;
+            min-width: 140px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+            padding: 0.8rem 0.5rem;
             text-align: center;
-            font-weight: 400;
             backdrop-filter: blur(4px);
             border: 1px solid rgba(255,255,255,0.15);
-            font-size: 1.1rem;
         }
-        body.light .rate-info {
-            background: rgba(0,0,0,0.03);
+        body.light .rate-card {
+            background: rgba(255,255,255,0.3);
             border-color: rgba(0,0,0,0.1);
+        }
+        .rate-card .label {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .rate-card .value {
+            font-size: 1.4rem;
+            font-weight: 500;
         }
 
         .converter {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
+            margin: 2rem 0;
         }
 
         .input-group {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.3rem;
         }
 
         .input-group label {
@@ -122,6 +137,7 @@
             opacity: 0.9;
             letter-spacing: 0.5px;
             font-size: 0.9rem;
+            margin-left: 0.5rem;
         }
 
         .input-field {
@@ -159,32 +175,6 @@
             opacity: 0.3;
         }
 
-        /* botones de swap (pequeño) */
-        .swap-wrap {
-            display: flex;
-            justify-content: center;
-            margin: 0.5rem 0;
-        }
-        .swap-btn {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            width: 42px;
-            height: 42px;
-            font-size: 1.3rem;
-            cursor: pointer;
-            backdrop-filter: blur(4px);
-            color: inherit;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .swap-btn:hover {
-            background: rgba(255,255,255,0.4);
-            transform: scale(1.05);
-        }
-
         .footer {
             margin-top: 2rem;
             font-size: 0.8rem;
@@ -192,7 +182,6 @@
             opacity: 0.6;
         }
 
-        /* eliminar flechas input number */
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button {
             -webkit-appearance: none;
@@ -210,81 +199,110 @@
             <button class="theme-toggle" id="themeToggle">🌙 Oscuro / ☀️ Claro</button>
         </div>
 
-        <h1>Bs. ⇄ USDT</h1>
+        <h1>Bs ⇄ BCV ⇄ USDT</h1>
 
-        <div class="rate-info" id="rateDisplay">
-            Cargando tasa...
+        <!-- Tarjetas de tasas -->
+        <div class="rates-container">
+            <div class="rate-card">
+                <div class="label">BCV (Oficial)</div>
+                <div class="value" id="rateBcv">--</div>
+            </div>
+            <div class="rate-card">
+                <div class="label">USDT</div>
+                <div class="value" id="rateUsdt">--</div>
+            </div>
         </div>
 
+        <!-- Campos de conversión -->
         <div class="converter">
             <div class="input-group">
-                <label>Bolívares (Bs.)</label>
+                <label>🇻🇪 Bolívares (Bs)</label>
                 <div class="input-field">
-                    <span>🇻🇪</span>
+                    <span>Bs</span>
                     <input type="number" id="vesInput" placeholder="0.00" step="0.01">
                 </div>
             </div>
 
-            <div class="swap-wrap">
-                <button class="swap-btn" id="swapBtn" title="Invertir conversión">⇅</button>
+            <div class="input-group">
+                <label>💵 Dólares BCV (USD oficial)</label>
+                <div class="input-field">
+                    <span>USD</span>
+                    <input type="number" id="bcvInput" placeholder="0.00" step="0.01">
+                </div>
             </div>
 
             <div class="input-group">
-                <label>USDT (Tether)</label>
+                <label>₿ USDT (Tether)</label>
                 <div class="input-field">
-                    <span>💵</span>
+                    <span>USDT</span>
                     <input type="number" id="usdtInput" placeholder="0.00" step="0.01">
                 </div>
             </div>
         </div>
 
         <div class="footer" id="lastUpdate">
-            ⏳ esperando datos...
+            ⏳ Cargando tasas...
         </div>
     </div>
 
     <script>
         (function() {
-            // ---- TASA POR DEFECTO MIENTRAS SE CARGA (última conocida) ----
-            let currentRate = null;          // se actualizará desde rates.json
+            // Variables de estado
+            let rateBcv = null;      // Bs por USD oficial
+            let rateUsdt = null;     // Bs por USDT
             let lastUpdated = null;
 
             // Elementos DOM
             const vesInput = document.getElementById('vesInput');
+            const bcvInput = document.getElementById('bcvInput');
             const usdtInput = document.getElementById('usdtInput');
-            const rateDisplay = document.getElementById('rateDisplay');
+            const rateBcvEl = document.getElementById('rateBcv');
+            const rateUsdtEl = document.getElementById('rateUsdt');
             const lastUpdateEl = document.getElementById('lastUpdate');
-            const swapBtn = document.getElementById('swapBtn');
             const themeToggle = document.getElementById('themeToggle');
 
-            // ---------- CARGAR TASA DESDE rates.json ----------
-            async function fetchRate() {
+            // ----- Cargar tasas desde rates.json -----
+            async function fetchRates() {
                 try {
                     const response = await fetch('rates.json?t=' + Date.now()); // evitar caché
                     if (!response.ok) throw new Error('No se pudo obtener rates.json');
                     const data = await response.json();
-                    if (data.rate && typeof data.rate === 'number') {
-                        currentRate = data.rate;
-                        lastUpdated = data.timestamp ? new Date(data.timestamp) : null;
-                        updateRateDisplay();
-                    } else {
-                        throw new Error('Formato inválido');
+                    
+                    // Validar y asignar
+                    if (data.oficial && typeof data.oficial === 'number') {
+                        rateBcv = data.oficial;
                     }
+                    if (data.usdt && typeof data.usdt === 'number') {
+                        rateUsdt = data.usdt;
+                    }
+                    // Tomar el timestamp más reciente de los dos
+                    const tsOficial = data.timestamp_oficial ? new Date(data.timestamp_oficial) : null;
+                    const tsUsdt = data.timestamp_usdt ? new Date(data.timestamp_usdt) : null;
+                    lastUpdated = (tsOficial && tsUsdt) ? (tsOficial > tsUsdt ? tsOficial : tsUsdt) : (tsOficial || tsUsdt);
+
+                    updateRateDisplay();
                 } catch (error) {
-                    console.warn('Error cargando rates.json, usando valor por defecto 36.5 Bs./USDT (offline)');
-                    // fallback para pruebas locales
-                    currentRate = 36.5;
+                    console.warn('Error cargando tasas, usando valores de respaldo (36.5 / 37.2)');
+                    // Valores de respaldo para pruebas locales
+                    rateBcv = 36.5;
+                    rateUsdt = 37.2;
                     lastUpdated = null;
                     updateRateDisplay();
                 }
             }
 
-            // Actualizar indicadores de tasa
+            // Actualizar las tarjetas de tasas
             function updateRateDisplay() {
-                if (currentRate) {
-                    rateDisplay.innerText = `1 USDT = ${currentRate.toFixed(2)} Bs. · 1 Bs. = ${(1/currentRate).toFixed(6)} USDT`;
+                if (rateBcv !== null) {
+                    rateBcvEl.innerText = rateBcv.toFixed(2) + ' Bs/USD';
                 } else {
-                    rateDisplay.innerText = 'Tasa no disponible';
+                    rateBcvEl.innerText = '--';
+                }
+
+                if (rateUsdt !== null) {
+                    rateUsdtEl.innerText = rateUsdt.toFixed(2) + ' Bs/USDT';
+                } else {
+                    rateUsdtEl.innerText = '--';
                 }
 
                 if (lastUpdated) {
@@ -293,58 +311,62 @@
                 } else {
                     lastUpdateEl.innerText = '🕒 actualización en espera...';
                 }
+
+                // Si ya tenemos tasas, forzar un recálculo (por si habían valores previos)
+                if (rateBcv !== null && rateUsdt !== null) {
+                    // Determinar qué campo tiene el foco o valor para recalcular
+                    if (document.activeElement === vesInput) updateFromVes();
+                    else if (document.activeElement === bcvInput) updateFromBcv();
+                    else if (document.activeElement === usdtInput) updateFromUsdt();
+                    else updateFromVes(); // por defecto
+                }
             }
 
-            // ---------- CONVERSIONES ----------
+            // ----- Funciones de conversión -----
             function updateFromVes() {
-                if (!currentRate) return;
+                if (rateBcv === null || rateUsdt === null) return;
                 const ves = parseFloat(vesInput.value);
                 if (isNaN(ves)) {
+                    bcvInput.value = '';
                     usdtInput.value = '';
                     return;
                 }
-                const usdt = ves / currentRate;
-                usdtInput.value = usdt.toFixed(4);
+                bcvInput.value = (ves / rateBcv).toFixed(4);
+                usdtInput.value = (ves / rateUsdt).toFixed(4);
+            }
+
+            function updateFromBcv() {
+                if (rateBcv === null || rateUsdt === null) return;
+                const bcv = parseFloat(bcvInput.value);
+                if (isNaN(bcv)) {
+                    vesInput.value = '';
+                    usdtInput.value = '';
+                    return;
+                }
+                const ves = bcv * rateBcv;
+                vesInput.value = ves.toFixed(2);
+                usdtInput.value = (ves / rateUsdt).toFixed(4);
             }
 
             function updateFromUsdt() {
-                if (!currentRate) return;
+                if (rateBcv === null || rateUsdt === null) return;
                 const usdt = parseFloat(usdtInput.value);
                 if (isNaN(usdt)) {
                     vesInput.value = '';
+                    bcvInput.value = '';
                     return;
                 }
-                const ves = usdt * currentRate;
+                const ves = usdt * rateUsdt;
                 vesInput.value = ves.toFixed(2);
+                bcvInput.value = (ves / rateBcv).toFixed(4);
             }
 
-            // Eventos de entrada
-            vesInput.addEventListener('input', () => {
-                updateFromVes();
-            });
+            // Asignar eventos
+            vesInput.addEventListener('input', updateFromVes);
+            bcvInput.addEventListener('input', updateFromBcv);
+            usdtInput.addEventListener('input', updateFromUsdt);
 
-            usdtInput.addEventListener('input', () => {
-                updateFromUsdt();
-            });
-
-            // Swap (intercambia valores y mantiene conversión)
-            swapBtn.addEventListener('click', () => {
-                const vesVal = vesInput.value;
-                const usdtVal = usdtInput.value;
-                vesInput.value = usdtVal;
-                usdtInput.value = vesVal;
-                // disparar conversión según el campo que ahora tiene foco
-                if (document.activeElement === vesInput) {
-                    updateFromVes();
-                } else if (document.activeElement === usdtInput) {
-                    updateFromUsdt();
-                } else {
-                    // Por defecto usar VES como origen
-                    updateFromVes();
-                }
-            });
-
-            // ---------- TEMA CLARO / OSCURO (glassmorphism) ----------
+            // ----- Tema claro/oscuro -----
             function toggleTheme() {
                 document.body.classList.toggle('light');
                 const isLight = document.body.classList.contains('light');
@@ -353,7 +375,7 @@
 
             themeToggle.addEventListener('click', toggleTheme);
 
-            // Inicializar tema (preferencia del sistema)
+            // Preferencia inicial del sistema
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
                 document.body.classList.add('light');
                 themeToggle.innerText = '🌙 Oscuro';
@@ -361,11 +383,11 @@
                 themeToggle.innerText = '☀️ Claro';
             }
 
-            // Iniciar carga de tasa
-            fetchRate();
+            // Iniciar carga de tasas
+            fetchRates();
 
-            // Recargar tasa cada 5 minutos (sin recargar página)
-            setInterval(fetchRate, 5 * 60 * 1000);
+            // Recargar tasas cada 5 minutos (sin recargar página)
+            setInterval(fetchRates, 5 * 60 * 1000);
         })();
     </script>
 </body>
