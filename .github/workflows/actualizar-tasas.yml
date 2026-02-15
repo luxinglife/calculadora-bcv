@@ -1,4 +1,4 @@
-name: Actualizar tasas BCV y Euro cada hora
+name: Actualizar tasas BCV, Euro y USDT cada hora
 
 on:
   schedule:
@@ -38,23 +38,60 @@ jobs:
           fi
           echo "rate=$RATE" >> $GITHUB_OUTPUT
 
+      - name: Obtener tasa USDT
+        id: get_usdt
+        run: |
+          RESPONSE=$(curl -s https://ve.dolarapi.com/v1/criptos/usdt)
+          echo "USDT response: $RESPONSE"
+          COMPRA=$(echo "$RESPONSE" | jq -r '.compra // empty')
+          VENTA=$(echo "$RESPONSE" | jq -r '.venta // empty')
+          PROMEDIO=$(echo "$RESPONSE" | jq -r '.promedio // empty')
+          TIMESTAMP=$(echo "$RESPONSE" | jq -r '.fechaActualizacion // empty')
+          if [ -z "$COMPRA" ] || [ "$COMPRA" = "null" ]; then
+            COMPRA=$PROMEDIO
+          fi
+          if [ -z "$VENTA" ] || [ "$VENTA" = "null" ]; then
+            VENTA=$PROMEDIO
+          fi
+          if [ -z "$COMPRA" ] || [ -z "$VENTA" ]; then
+            echo "Error: No se pudo obtener tasa USDT"
+            exit 1
+          fi
+          echo "compra=$COMPRA" >> $GITHUB_OUTPUT
+          echo "venta=$VENTA" >> $GITHUB_OUTPUT
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+
       - name: Actualizar rates.json
         run: |
           BCV_RATE='${{ steps.get_bcv.outputs.rate }}'
           EURO_RATE='${{ steps.get_euro.outputs.rate }}'
-          # Generar timestamp actual en UTC (se convertirá a Caracas en el frontend)
+          USDT_COMPRA='${{ steps.get_usdt.outputs.compra }}'
+          USDT_VENTA='${{ steps.get_usdt.outputs.venta }}'
+          USDT_TS='${{ steps.get_usdt.outputs.timestamp }}'
           CURRENT_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
+          if [ -z "$USDT_TS" ] || [ "$USDT_TS" = "null" ]; then
+            USDT_TS=$CURRENT_TIMESTAMP
+          fi
+
           if [ -f rates.json ]; then
-            jq --argjson bcv "$BCV_RATE" --argjson euro "$EURO_RATE" --arg ts "$CURRENT_TIMESTAMP" \
-               '.oficial = $bcv | .euro = $euro | .timestamp_oficial = $ts | .timestamp_euro = $ts' \
+            jq --argjson bcv "$BCV_RATE" \
+               --argjson euro "$EURO_RATE" \
+               --argjson usdt_compra "$USDT_COMPRA" \
+               --argjson usdt_venta "$USDT_VENTA" \
+               --arg ts "$CURRENT_TIMESTAMP" \
+               --arg usdt_ts "$USDT_TS" \
+               '.oficial = $bcv | .euro = $euro | .timestamp_oficial = $ts | .timestamp_euro = $ts | .usdt_compra = $usdt_compra | .usdt_venta = $usdt_venta | .timestamp_usdt = $usdt_ts' \
                rates.json > tmp.json && mv tmp.json rates.json
           else
             echo "{
               \"oficial\": $BCV_RATE,
               \"euro\": $EURO_RATE,
+              \"usdt_compra\": $USDT_COMPRA,
+              \"usdt_venta\": $USDT_VENTA,
               \"timestamp_oficial\": \"$CURRENT_TIMESTAMP\",
-              \"timestamp_euro\": \"$CURRENT_TIMESTAMP\"
+              \"timestamp_euro\": \"$CURRENT_TIMESTAMP\",
+              \"timestamp_usdt\": \"$USDT_TS\"
             }" > rates.json
           fi
           cat rates.json
@@ -64,6 +101,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add rates.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 actualizar tasas BCV y Euro"
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 actualizar tasas BCV, Euro y USDT"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git push
