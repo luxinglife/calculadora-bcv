@@ -32,7 +32,7 @@ jobs:
       - name: Obtener tasa Euro
         id: get_euro
         run: |
-          RESPONSE=$(curl -s https://ve.dolarapi.com/v1/divisas/eur)
+          RESPONSE=$(curl -s https://ve.dolarapi.com/v1/euros)
           echo "Euro response: $RESPONSE"
           RATE=$(echo "$RESPONSE" | jq -r '(.venta // .promedio) // empty')
           TIMESTAMP=$(echo "$RESPONSE" | jq -r '.fechaActualizacion // empty')
