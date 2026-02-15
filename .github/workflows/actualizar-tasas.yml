@@ -1,4 +1,4 @@
-name: Actualizar tasas BCV, Euro y USDT (Binance) cada hora
+name: Actualizar tasas BCV y Euro cada hora
 
 on:
   schedule:
@@ -14,7 +14,6 @@ jobs:
       - name: Clonar repositorio
         uses: actions/checkout@v4
 
-      # --- TASA BCV ---
       - name: Obtener tasa BCV
         id: get_bcv
         run: |
@@ -27,7 +26,6 @@ jobs:
           fi
           echo "rate=$RATE" >> $GITHUB_OUTPUT
 
-      # --- TASA EURO ---
       - name: Obtener tasa Euro
         id: get_euro
         run: |
@@ -40,117 +38,33 @@ jobs:
           fi
           echo "rate=$RATE" >> $GITHUB_OUTPUT
 
-      # --- TASA USDT (Binance P2P) con reintentos ---
-      - name: Obtener tasa USDT (Binance P2P)
-        id: get_usdt
-        continue-on-error: true  # No detiene el workflow si falla
-        run: |
-          # Función con reintentos
-          fetch_binance_price() {
-            local TRADE_TYPE=$1
-            local MAX_RETRIES=3
-            local RETRY_DELAY=2
-            for i in $(seq 1 $MAX_RETRIES); do
-              echo "Intento $i para $TRADE_TYPE..."
-              RESPONSE=$(curl -s -X POST https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search \
-                -H "Content-Type: application/json" \
-                -d '{
-                  "asset": "USDT",
-                  "fiat": "VES",
-                  "tradeType": "'"$TRADE_TYPE"'",
-                  "page": 1,
-                  "rows": 1,
-                  "payTypes": [],
-                  "publisherType": null
-                }' | tr -d '\0' | sed 's/^\xEF\xBB\xBF//')
-              
-              # Verificar si es JSON válido
-              echo "$RESPONSE" | jq empty 2>/dev/null || {
-                echo "Respuesta no JSON en intento $i: $RESPONSE"
-                sleep $RETRY_DELAY
-                continue
-              }
-              
-              # Extraer precio (si existe al menos un anuncio)
-              PRICE=$(echo "$RESPONSE" | jq -r '.data | if length>0 then .[0].adv.price else empty end')
-              if [ -n "$PRICE" ] && [ "$PRICE" != "null" ]; then
-                echo "$PRICE"
-                return 0
-              fi
-              
-              echo "No hay anuncios en intento $i, esperando..."
-              sleep $RETRY_DELAY
-            done
-            return 1
-          }
-
-          # Obtener precio de compra (BUY)
-          COMPRA=$(fetch_binance_price "BUY")
-          if [ -z "$COMPRA" ]; then
-            echo "Error: No se pudo obtener precio de compra USDT después de reintentos"
-            # Si falla, no asignamos nada, pero el paso continúa (continue-on-error)
-            exit 1
-          fi
-
-          # Obtener precio de venta (SELL)
-          VENTA=$(fetch_binance_price "SELL")
-          if [ -z "$VENTA" ]; then
-            echo "Error: No se pudo obtener precio de venta USDT después de reintentos"
-            exit 1
-          fi
-
-          echo "compra=$COMPRA" >> $GITHUB_OUTPUT
-          echo "venta=$VENTA" >> $GITHUB_OUTPUT
-
-      # --- ACTUALIZAR rates.json (conservando tasas anteriores si falló USDT) ---
       - name: Actualizar rates.json
         run: |
           BCV_RATE='${{ steps.get_bcv.outputs.rate }}'
           EURO_RATE='${{ steps.get_euro.outputs.rate }}'
-          # Si el paso USDT falló, las variables estarán vacías; entonces leemos del archivo existente
-          if [ -f rates.json ]; then
-            OLD_COMPRA=$(jq -r '.usdt_compra // empty' rates.json)
-            OLD_VENTA=$(jq -r '.usdt_venta // empty' rates.json)
-          fi
-          USDT_COMPRA='${{ steps.get_usdt.outputs.compra }}'
-          USDT_VENTA='${{ steps.get_usdt.outputs.venta }}'
-          if [ -z "$USDT_COMPRA" ]; then
-            USDT_COMPRA=$OLD_COMPRA
-            echo "Usando tasa de compra anterior: $USDT_COMPRA"
-          fi
-          if [ -z "$USDT_VENTA" ]; then
-            USDT_VENTA=$OLD_VENTA
-            echo "Usando tasa de venta anterior: $USDT_VENTA"
-          fi
           CURRENT_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
           if [ -f rates.json ]; then
             jq --argjson bcv "$BCV_RATE" \
                --argjson euro "$EURO_RATE" \
-               --argjson usdt_compra "$USDT_COMPRA" \
-               --argjson usdt_venta "$USDT_VENTA" \
                --arg ts "$CURRENT_TIMESTAMP" \
-               '.oficial = $bcv | .euro = $euro | .timestamp_oficial = $ts | .timestamp_euro = $ts | .usdt_compra = $usdt_compra | .usdt_venta = $usdt_venta | .timestamp_usdt = $ts' \
+               '.oficial = $bcv | .euro = $euro | .timestamp_oficial = $ts | .timestamp_euro = $ts' \
                rates.json > tmp.json && mv tmp.json rates.json
           else
             echo "{
               \"oficial\": $BCV_RATE,
               \"euro\": $EURO_RATE,
-              \"usdt_compra\": $USDT_COMPRA,
-              \"usdt_venta\": $USDT_VENTA,
               \"timestamp_oficial\": \"$CURRENT_TIMESTAMP\",
-              \"timestamp_euro\": \"$CURRENT_TIMESTAMP\",
-              \"timestamp_usdt\": \"$CURRENT_TIMESTAMP\"
+              \"timestamp_euro\": \"$CURRENT_TIMESTAMP\"
             }" > rates.json
           fi
           cat rates.json
 
-      # --- COMMIT Y PUSH ---
       - name: Commit y push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add rates.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 actualizar tasas BCV, Euro y USDT (Binance)"
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 actualizar tasas BCV y Euro"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git push
