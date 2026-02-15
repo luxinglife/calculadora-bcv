@@ -1,46 +1,72 @@
-      - name: Extraer tasas BCV y USDT
+name: Actualizar tasas BCV/USDT
+
+on:
+  schedule:
+    # Se ejecuta cada hora (puedes cambiarlo, por ejemplo cada 30 minutos: '*/30 * * * *')
+    - cron: '0 * * * *'
+  workflow_dispatch:  # Permite ejecutarlo manualmente
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Necesario para hacer commit del archivo
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Obtener tasa oficial (BCV)
+        run: |
+          curl -s https://dolarapi.com/v1/dolares/oficial > oficial.json
+
+      - name: Obtener tasa paralelo (referencia USDT)
+        run: |
+          curl -s https://dolarapi.com/v1/dolares/paralelo > paralelo.json
+
+      - name: Extraer y guardar tasas
         run: |
           python3 -c "
-import json
+          import json
+          import sys
 
-# Cargar el archivo descargado
-with open('dolares.json') as f:
-    data = json.load(f)
+          try:
+              # Leer tasa oficial
+              with open('oficial.json') as f:
+                  oficial_data = json.load(f)
+              tasa_bcv = oficial_data.get('promedio') or oficial_data.get('venta')
+              if not tasa_bcv:
+                  print('Error: No se pudo obtener tasa BCV')
+                  sys.exit(1)
 
-# Imprimir la estructura para depuración (esto saldrá en los logs)
-print('Estructura recibida:')
-print(json.dumps(data, indent=2)[:500])  # Solo primeros 500 caracteres
+              # Leer tasa paralelo (USDT)
+              with open('paralelo.json') as f:
+                  paralelo_data = json.load(f)
+              tasa_usdt = paralelo_data.get('promedio') or paralelo_data.get('venta')
+              if not tasa_usdt:
+                  # Si no hay paralelo, estimar un 10% más que la oficial
+                  tasa_usdt = tasa_bcv * 1.1
 
-# Intentar detectar la estructura automáticamente
-tasa_bcv = None
-tasa_usdt = None
+              # Crear objeto con las tasas
+              resultado = {
+                  'bcv': round(float(tasa_bcv), 2),
+                  'usdt': round(float(tasa_usdt), 2)
+              }
 
-# Caso 1: Si es un diccionario con claves 'oficial' y 'paralelo'
-if isinstance(data, dict):
-    if 'oficial' in data:
-        oficial = data['oficial']
-        tasa_bcv = oficial.get('promedio') or oficial.get('venta')
-    if 'paralelo' in data:
-        paralelo = data['paralelo']
-        tasa_usdt = paralelo.get('promedio') or paralelo.get('venta')
+              # Guardar en archivo
+              with open('tasas.json', 'w') as f:
+                  json.dump(resultado, f, indent=2)
 
-# Caso 2: Si es una lista de objetos con clave 'tipo' (como suponíamos antes)
-elif isinstance(data, list):
-    for item in data:
-        if item.get('tipo') == 'oficial':
-            tasa_bcv = item.get('promedio') or item.get('venta')
-        elif item.get('tipo') == 'paralelo':
-            tasa_usdt = item.get('promedio') or item.get('venta')
+              print('Tasas actualizadas correctamente')
+          except Exception as e:
+              print(f'Error: {e}')
+              sys.exit(1)
+          "
 
-# Si no se encontraron, usar valores por defecto
-if tasa_bcv is None:
-    tasa_bcv = 36.0
-if tasa_usdt is None:
-    tasa_usdt = tasa_bcv * 1.1 if tasa_bcv else 40.0
-
-resultado = {'bcv': round(tasa_bcv, 2), 'usdt': round(tasa_usdt, 2)}
-with open('tasas.json', 'w') as f:
-    json.dump(resultado, f, indent=2)
-
-print('Tasas extraídas:', resultado)
-"
+      - name: Hacer commit del archivo actualizado
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add tasas.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "Actualizar tasas [skip ci]"
+          git push
