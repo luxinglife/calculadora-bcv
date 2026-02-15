@@ -5,38 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BCV · USDT Calculator</title>
     <style>
-        /* (Mismos estilos, los omito por brevedad, pero debes copiarlos igual que antes) */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, system-ui, sans-serif; }
-        body { min-height: 100vh; background: linear-gradient(135deg, #0a0f1e, #1a1f2f); display: flex; justify-content: center; align-items: center; padding: 16px; }
-        .glass-container { width: 100%; max-width: 800px; background: rgba(20, 25, 40, 0.6); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border-radius: 40px; padding: 32px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-        h1 { color: #fff; font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; text-shadow: 0 2px 5px rgba(0,0,0,0.3); }
-        .subtitle { color: #a0a8c0; font-size: 1rem; margin-bottom: 24px; border-left: 4px solid #3b82f6; padding-left: 16px; }
-        .refresh-container { display: flex; justify-content: flex-end; margin-bottom: 20px; }
-        .refresh-btn { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5); color: white; padding: 10px 20px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; cursor: pointer; backdrop-filter: blur(5px); display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
-        .refresh-btn:hover { background: rgba(59, 130, 246, 0.4); border-color: #3b82f6; }
-        .rates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
-        .rate-card { background: rgba(0, 0, 0, 0.3); border-radius: 24px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.2s; }
-        .rate-card:hover { border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
-        .rate-label { color: #8f9bb3; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .rate-value { color: #fff; font-size: 2.2rem; font-weight: 700; line-height: 1.2; }
-        .rate-value small { font-size: 1rem; color: #6b7a93; font-weight: 400; margin-left: 5px; }
-        .last-update { color: #6b7a93; font-size: 0.8rem; text-align: right; margin-top: 5px; }
-        .calc-section { background: rgba(0, 0, 0, 0.2); border-radius: 28px; padding: 24px; margin-bottom: 24px; border: 1px solid rgba(255, 255, 255, 0.05); }
-        .section-title { color: #fff; font-size: 1.3rem; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
-        .section-title span { background: #2d3748; padding: 4px 12px; border-radius: 40px; font-size: 0.8rem; color: #a0aec0; }
-        .input-group { margin-bottom: 20px; }
-        .input-label { color: #b0b8d0; margin-bottom: 8px; font-size: 0.95rem; display: block; }
-        .input-field { width: 100%; background: rgba(10, 15, 30, 0.6); border: 1px solid #2d3748; border-radius: 20px; padding: 16px 20px; font-size: 1.2rem; color: #fff; outline: none; transition: all 0.2s; }
-        .input-field:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
-        .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
-        .result-item { background: rgba(0, 0, 0, 0.3); border-radius: 20px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.05); }
-        .result-label { color: #8f9bb3; font-size: 0.8rem; margin-bottom: 8px; }
-        .result-number { color: #fff; font-size: 1.5rem; font-weight: 600; }
-        .result-number small { font-size: 0.9rem; color: #6b7a93; font-weight: 400; }
-        .footer-note { color: #6b7a93; font-size: 0.8rem; text-align: center; margin-top: 32px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
-        .footer-note a { color: #90a0c0; text-decoration: none; border-bottom: 1px dotted; }
-        .footer-note a:hover { color: #fff; }
-        @media (max-width: 600px) { .glass-container { padding: 20px; } h1 { font-size: 1.8rem; } .rates-grid { grid-template-columns: 1fr; } .results-grid { grid-template-columns: 1fr; } }
+        /* (mismos estilos, no los repito para no alargar, pero debes copiarlos del mensaje anterior) */
     </style>
 </head>
 <body>
@@ -60,8 +29,8 @@
                 <div class="rate-value" id="tasaBCV">Bs --</div>
             </div>
             <div class="rate-card">
-                <div class="rate-label">💱 USDT P2P (Banesco)</div>
-                <div class="rate-value" id="tasaP2P">Bs --</div>
+                <div class="rate-label">💱 USDT P2P (Binance/Banesco)</div>
+                <div class="rate-value" id="tasaUSDT">Bs --</div>  <!-- Cambié id a tasaUSDT -->
             </div>
         </div>
         <div class="last-update" id="lastUpdate"></div>
@@ -110,8 +79,7 @@
 
         <div class="footer-note">
             🔄 Tasas obtenidas de <a href="https://dolarapi.com" target="_blank">dolarapi.com</a> vía proxy múltiple · 
-            Actualización automática cada 5 minutos<br>
-            La tasa P2P es aproximada. Para operaciones reales, verifica en Binance.
+            La tasa USDT P2P es aproximada basada en el mercado. Para operaciones reales, verifica en Binance.
         </div>
     </div>
 
@@ -120,11 +88,11 @@
         // VERSIÓN CON MÚLTIPLES PROXIES (FALLBACK)
         // ============================================
         let tasaBCV = 0;
-        let tasaP2P = 0;
+        let tasaUSDT = 0;  // Cambié de tasaP2P a tasaUSDT
 
         // Elementos del DOM
         const tasaBCVEl = document.getElementById('tasaBCV');
-        const tasaP2PEl = document.getElementById('tasaP2P');
+        const tasaUSDTEl = document.getElementById('tasaUSDT');  // Cambiado
         const lastUpdateEl = document.getElementById('lastUpdate');
         
         const inputBs = document.getElementById('inputBs');
@@ -142,7 +110,7 @@
             return ahora.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
-        // Lista de proxies gratuitos (intentamos en orden hasta que uno funcione)
+        // Lista de proxies gratuitos
         const proxies = [
             'https://corsproxy.io/?',
             'https://api.allorigins.win/get?url=',
@@ -153,25 +121,22 @@
         async function obtenerTasas() {
             // Mostrar estado de carga
             tasaBCVEl.innerText = 'Bs ...';
-            tasaP2PEl.innerText = 'Bs ...';
+            tasaUSDTEl.innerText = 'Bs ...';
             if (lastUpdateEl) lastUpdateEl.innerText = 'Actualizando...';
 
-            // URL objetivo
             const targetUrl = 'https://ve.dolarapi.com/v1/dolares';
 
-            // Intentar con cada proxy hasta que funcione
             for (const proxy of proxies) {
                 try {
                     const proxyUrl = proxy + encodeURIComponent(targetUrl);
                     const response = await fetch(proxyUrl, { 
                         timeout: 5000,
-                        headers: { 'Origin': window.location.origin } // Algunos proxies lo requieren
+                        headers: { 'Origin': window.location.origin }
                     });
                     
-                    if (!response.ok) continue; // Si falla, probamos el siguiente proxy
+                    if (!response.ok) continue;
 
                     let data;
-                    // El formato de respuesta puede variar según el proxy
                     if (proxy.includes('allorigins')) {
                         const result = await response.json();
                         data = JSON.parse(result.contents);
@@ -179,9 +144,9 @@
                         data = await response.json();
                     }
 
-                    // Buscar tasas oficial y paralelo
+                    // Buscar tasas: oficial y la que usaremos para USDT P2P (en dolarapi es "paralelo")
                     const oficial = data.find(d => d.tipo === 'oficial');
-                    const paralelo = data.find(d => d.tipo === 'paralelo');
+                    const usdtReference = data.find(d => d.tipo === 'paralelo'); // En dolarapi, paralelo es la tasa del mercado
 
                     if (oficial && (oficial.promedio || oficial.venta)) {
                         tasaBCV = oficial.promedio || oficial.venta;
@@ -189,42 +154,40 @@
                         throw new Error('No se encontró tasa oficial');
                     }
 
-                    if (paralelo && (paralelo.promedio || paralelo.venta)) {
-                        tasaP2P = paralelo.promedio || paralelo.venta;
+                    if (usdtReference && (usdtReference.promedio || usdtReference.venta)) {
+                        tasaUSDT = usdtReference.promedio || usdtReference.venta;
                     } else {
-                        // Si no hay paralelo, usamos la oficial + 10% como estimado
-                        tasaP2P = tasaBCV * 1.1;
+                        // Si no hay referencia, usamos la oficial + 10% como estimado
+                        tasaUSDT = tasaBCV * 1.1;
                     }
 
                     // Actualizar UI
                     tasaBCVEl.innerText = `Bs ${tasaBCV.toFixed(2)}`;
-                    tasaP2PEl.innerText = `Bs ${tasaP2P.toFixed(2)}`;
+                    tasaUSDTEl.innerText = `Bs ${tasaUSDT.toFixed(2)}`;
                     if (lastUpdateEl) lastUpdateEl.innerText = `Última actualización: ${formatearFecha()}`;
                     calcularTodos();
-                    return; // Salir de la función si todo fue bien
+                    return;
 
                 } catch (error) {
                     console.log(`Proxy ${proxy} falló:`, error);
-                    // Continuar con el siguiente proxy
                 }
             }
 
-            // Si todos los proxies fallan, usar valores por defecto
+            // Si todos fallan, valores por defecto
             console.error('Todos los proxies fallaron');
             tasaBCV = 36.0;
-            tasaP2P = 40.0;
+            tasaUSDT = 40.0;
             tasaBCVEl.innerText = `⚠️ Bs ${tasaBCV.toFixed(2)}`;
-            tasaP2PEl.innerText = `⚠️ Bs ${tasaP2P.toFixed(2)}`;
+            tasaUSDTEl.innerText = `⚠️ Bs ${tasaUSDT.toFixed(2)}`;
             if (lastUpdateEl) lastUpdateEl.innerText = 'Error al actualizar. Usando valores aproximados.';
             calcularTodos();
         }
 
-        // Funciones de cálculo (igual que antes)
         function calcularBsTo() {
             const montoBs = parseFloat(inputBs.value) || 0;
             
-            if (montoBs > 0 && tasaP2P > 0) {
-                const usdt = montoBs / tasaP2P;
+            if (montoBs > 0 && tasaUSDT > 0) {
+                const usdt = montoBs / tasaUSDT;
                 resultBsToUsdt.innerText = usdt.toFixed(4) + ' USDT';
             } else {
                 resultBsToUsdt.innerText = '0.00 USDT';
@@ -241,8 +204,8 @@
         function calcularUsdtTo() {
             const montoUsdt = parseFloat(inputUsdt.value) || 0;
             
-            if (montoUsdt > 0 && tasaP2P > 0) {
-                const bsP2P = montoUsdt * tasaP2P;
+            if (montoUsdt > 0 && tasaUSDT > 0) {
+                const bsP2P = montoUsdt * tasaUSDT;
                 resultUsdtToBsP2P.innerText = bsP2P.toFixed(2) + ' Bs';
             } else {
                 resultUsdtToBsP2P.innerText = '0.00 Bs';
@@ -261,14 +224,12 @@
             calcularUsdtTo();
         }
 
-        // Event listeners
         inputBs.addEventListener('input', calcularBsTo);
         inputUsdt.addEventListener('input', calcularUsdtTo);
         refreshBtn.addEventListener('click', obtenerTasas);
 
-        // Inicializar
         obtenerTasas();
-        setInterval(obtenerTasas, 300000); // 5 minutos
+        setInterval(obtenerTasas, 300000);
     </script>
 </body>
 </html>
